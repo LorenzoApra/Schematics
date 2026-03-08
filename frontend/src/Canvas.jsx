@@ -1,10 +1,10 @@
 import { Stage, Layer, Rect, Text } from "react-konva";
 
-export default function Canvas({ devices, onMove, onDelete }) {
+export default function Canvas({ devices, onMove, onDelete, onEdit }) {
   return (
     <Stage width={1200} height={800} style={{ background: "#fafafa" }}>
       <Layer>
-        {devices.map(d => (
+        {devices.map((d) => (
           <Rect
             key={d.id}
             x={d.x}
@@ -13,11 +13,18 @@ export default function Canvas({ devices, onMove, onDelete }) {
             height={60}
             fill={d.color || "#ddd"}
             draggable
-            onDragEnd={e => onMove(d.id, e.target.x(), e.target.y())}
+            onDragEnd={(e) => onMove(d.id, e.target.x(), e.target.y())}
+            onDblClick={() => {
+              const newName = prompt("New name:", d.name);
+              const newColor = prompt("New color (hex):", d.color);
+              if (newName || newColor) {
+                onEdit(d.id, newName || d.name, newColor || d.color);
+              }
+            }}
           />
         ))}
 
-        {devices.map(d => (
+        {devices.map((d) => (
           <Text
             key={d.id + "_t"}
             x={d.x + 10}
@@ -27,7 +34,7 @@ export default function Canvas({ devices, onMove, onDelete }) {
           />
         ))}
 
-        {devices.map(d => (
+        {devices.map((d) => (
           <Text
             key={d.id + "_del"}
             text="✕"

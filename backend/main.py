@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import Base, engine, SessionLocal
-from models import Device, Connection, DeviceTemplate
+from models import Device, Connection, DeviceTemplate, DeviceCategory
 
 Base.metadata.create_all(bind=engine)
 
@@ -48,10 +48,8 @@ def update_device(device_id: int, data: dict, db: Session = Depends(get_db)):
     if not device:
         return {"error": "Device not found"}
 
-    device.x = data.get("x", device.x)
-    device.y = data.get("y", device.y)
-    device.color = data.get("color", device.color)
-    device.name = data.get("name", device.name)
+    for key, value in data.items():
+        setattr(device, key, value)
 
     db.commit()
     db.refresh(device)
@@ -65,6 +63,49 @@ def delete_device(device_id: int, db: Session = Depends(get_db)):
         return {"error": "Device not found"}
 
     db.delete(device)
+    db.commit()
+    return {"status": "deleted"}
+
+
+# -------------------------
+#     DEVICE CATEGORIES
+# -------------------------
+
+@app.get("/categories")
+def get_categories(db: Session = Depends(get_db)):
+    return db.query(DeviceCategory).all()
+
+
+@app.post("/categories")
+def add_category(cat: dict, db: Session = Depends(get_db)):
+    c = DeviceCategory(**cat)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return c
+
+
+@app.put("/categories/{cat_id}")
+def update_category(cat_id: int, data: dict, db: Session = Depends(get_db)):
+    cat = db.query(DeviceCategory).filter(DeviceCategory.id == cat_id).first()
+    if not cat:
+        return {"error": "Category not found"}
+
+    for key, value in data.items():
+        setattr(cat, key, value)
+
+    db.commit()
+    db.refresh(cat)
+    return cat
+
+
+@app.delete("/categories/{cat_id}")
+def delete_category(cat_id: int, db: Session = Depends(get_db)):
+    cat = db.query(DeviceCategory).filter(DeviceCategory.id == cat_id).first()
+    if not cat:
+        return {"error": "Category not found"}
+
+    db.delete(cat)
     db.commit()
     return {"status": "deleted"}
 
@@ -87,32 +128,26 @@ def add_template(template: dict, db: Session = Depends(get_db)):
     return t
 
 
-# -------------------------
-#      CONNECTIONS
-# -------------------------
+@app.put("/templates/{template_id}")
+def update_template(template_id: int, data: dict, db: Session = Depends(get_db)):
+    t = db.query(DeviceTemplate).filter(DeviceTemplate.id == template_id).first()
+    if not t:
+        return {"error": "Template not found"}
 
-@app.post("/connections")
-def add_connection(conn: dict, db: Session = Depends(get_db)):
-    c = Connection(**conn)
-    db.add(c)
+    for key, value in data.items():
+        setattr(t, key, value)
+
     db.commit()
-    db.refresh(c)
-    return c
+    db.refresh(t)
+    return t
 
 
-# -------------------------
-#      PATCHLIST
-# -------------------------
+@app.delete("/templates/{template_id}")
+def delete_template(template_id: int, db: Session = Depends(get_db)):
+    t = db.query(DeviceTemplate).filter(DeviceTemplate.id == template_id).first()
+    if not t:
+        return {"error": "Template not found"}
 
-@app.get("/patchlist")
-def generate_patchlist(db: Session = Depends(get_db)):
-    conns = db.query(Connection).all()
-    devices = {d.id: d for d in db.query(Device).all()}
-
-    patchlist = []
-    for c in conns:
-        patchlist.append({
-            "from": f"{devices[c.from_device].name} - {c.from_port}",
-            "to": f"{devices[c.to_device].name} - {c.to_port}"
-        })
-    return patchlist
+    db.delete(t)
+    db.commit()
+    return {"status": "deleted"}

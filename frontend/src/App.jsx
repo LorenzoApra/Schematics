@@ -11,24 +11,39 @@ export default function App() {
   }, []);
 
   function handleAdd(name, color) {
-    addDevice({ name, color, x: 100, y: 100 })
-      .then(d => setDevices([...devices, d]));
+    addDevice({ name, color, x: 100, y: 100 }).then((d) =>
+      setDevices([...devices, d])
+    );
   }
 
   function handleMove(id, x, y) {
     updateDevice(id, { x, y });
-    setDevices(devices.map(d => d.id === id ? { ...d, x, y } : d));
+    setDevices(devices.map((d) => (d.id === id ? { ...d, x, y } : d)));
   }
 
   function handleDelete(id) {
     deleteDevice(id);
-    setDevices(devices.filter(d => d.id !== id));
+    setDevices(devices.filter((d) => d.id !== id));
+  }
+
+  function handleEdit(id, newName, newColor) {
+    updateDevice(id, { name: newName, color: newColor });
+    setDevices(
+      devices.map((d) =>
+        d.id === id ? { ...d, name: newName, color: newColor } : d
+      )
+    );
   }
 
   return (
     <div style={{ display: "flex" }}>
       <DeviceSidebar onAdd={handleAdd} />
-      <Canvas devices={devices} onMove={handleMove} onDelete={handleDelete} />
+      <Canvas
+        devices={devices}
+        onMove={handleMove}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+      />
     </div>
   );
 }
