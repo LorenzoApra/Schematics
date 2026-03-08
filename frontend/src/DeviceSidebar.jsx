@@ -15,12 +15,14 @@ export default function DeviceSidebar({ onAdd }) {
   const [categories, setCategories] = useState([]);
   const [selectedCat, setSelectedCat] = useState("all");
 
+  const [search, setSearch] = useState(""); // 🔍 ricerca
+
   const [name, setName] = useState("");
   const [newCat, setNewCat] = useState("");
   const [newCatColor, setNewCatColor] = useState("#cccccc");
   const [templateCat, setTemplateCat] = useState("");
 
-  const [openMenu, setOpenMenu] = useState(null); // id del menu aperto
+  const [openMenu, setOpenMenu] = useState(null);
 
   useEffect(() => {
     getTemplates().then(setTemplates);
@@ -77,14 +79,34 @@ export default function DeviceSidebar({ onAdd }) {
     });
   }
 
-  const filteredTemplates =
-    selectedCat === "all"
-      ? templates
-      : templates.filter((t) => t.category_id === selectedCat);
+  // 🔍 FILTRI DI RICERCA
+  const filteredCategories = categories.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredTemplates = templates.filter((t) => {
+    const matchName = t.name.toLowerCase().includes(search.toLowerCase());
+    const matchCategory =
+      selectedCat === "all" || t.category_id === selectedCat;
+    return matchName && matchCategory;
+  });
 
   return (
     <div style={{ width: 260, padding: 20 }}>
       <h3>Categories</h3>
+
+      {/* 🔍 SEARCH BAR */}
+      <input
+        placeholder="Search..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          width: "100%",
+          marginBottom: 15,
+          padding: 6,
+          border: "1px solid #aaa",
+        }}
+      />
 
       {/* ALL BUTTON */}
       <button
@@ -102,7 +124,7 @@ export default function DeviceSidebar({ onAdd }) {
       </button>
 
       {/* CATEGORY LIST */}
-      {categories.map((c) => (
+      {filteredCategories.map((c) => (
         <div key={c.id} style={{ marginBottom: 10, position: "relative" }}>
           <button
             style={{
@@ -144,26 +166,22 @@ export default function DeviceSidebar({ onAdd }) {
                 zIndex: 10,
               }}
             >
-              <div>
-                <input
-                  value={c.name}
-                  onChange={(e) =>
-                    handleUpdateCategory(c.id, e.target.value, c.color)
-                  }
-                  style={{ width: "100%", marginBottom: 5 }}
-                />
-              </div>
+              <input
+                value={c.name}
+                onChange={(e) =>
+                  handleUpdateCategory(c.id, e.target.value, c.color)
+                }
+                style={{ width: "100%", marginBottom: 5 }}
+              />
 
-              <div>
-                <input
-                  type="color"
-                  value={c.color}
-                  onChange={(e) =>
-                    handleUpdateCategory(c.id, c.name, e.target.value)
-                  }
-                  style={{ width: "100%", marginBottom: 5 }}
-                />
-              </div>
+              <input
+                type="color"
+                value={c.color}
+                onChange={(e) =>
+                  handleUpdateCategory(c.id, c.name, e.target.value)
+                }
+                style={{ width: "100%", marginBottom: 5 }}
+              />
 
               <button
                 onClick={() => handleDeleteCategory(c.id)}
