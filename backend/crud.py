@@ -1,177 +1,194 @@
+from typing import List, Optional
 from sqlalchemy.orm import Session
-from models import (
-    Category,
-    Template,
-    TemplatePort,
-    Device,
-    DevicePort,
-)
-from schemas import (
-    CategoryCreate,
-    TemplateCreate,
-    TemplatePortCreate,
-    DeviceCreate,
-    DeviceUpdate,
-)
+
+from . import models, schemas
 
 
-# --------------------------------------------------
-#   CATEGORY CRUD
-# --------------------------------------------------
-def get_categories(db: Session):
-    return db.query(Category).all()
+# Categories
+def get_categories(db: Session) -> List[models.Category]:
+    return db.query(models.Category).all()
 
 
-def create_category(db: Session, data: CategoryCreate):
-    category = Category(**data.dict())
-    db.add(category)
+def get_category(db: Session, category_id: int) -> Optional[models.Category]:
+    return db.query(models.Category).filter(models.Category.id == category_id).first()
+
+
+def create_category(db: Session, data: schemas.CategoryCreate) -> models.Category:
+    obj = models.Category(**data.dict())
+    db.add(obj)
     db.commit()
-    db.refresh(category)
-    return category
+    db.refresh(obj)
+    return obj
 
 
-# --------------------------------------------------
-#   TEMPLATE CRUD
-# --------------------------------------------------
-def get_templates(db: Session):
-    return db.query(Template).all()
-
-
-def get_template(db: Session, template_id: int):
-    return db.query(Template).filter(Template.id == template_id).first()
-
-
-def create_template(db: Session, data: TemplateCreate):
-    template = Template(**data.dict())
-    db.add(template)
-    db.commit()
-    db.refresh(template)
-    return template
-
-
-def update_template(db: Session, template_id: int, data: dict):
-    template = get_template(db, template_id)
-    if not template:
+def update_category(db: Session, category_id: int, data: schemas.CategoryUpdate) -> Optional[models.Category]:
+    obj = get_category(db, category_id)
+    if not obj:
         return None
-
-    for key, value in data.items():
-        setattr(template, key, value)
-
+    for k, v in data.dict(exclude_unset=True).items():
+        setattr(obj, k, v)
+    db.add(obj)
     db.commit()
-    db.refresh(template)
-    return template
+    db.refresh(obj)
+    return obj
 
 
-def delete_template(db: Session, template_id: int):
-    template = get_template(db, template_id)
-    if not template:
+def delete_category(db: Session, category_id: int) -> bool:
+    obj = get_category(db, category_id)
+    if not obj:
+        return False
+    db.delete(obj)
+    db.commit()
+    return True
+
+
+# Templates
+def get_templates(db: Session) -> List[models.Template]:
+    return db.query(models.Template).all()
+
+
+def get_template(db: Session, template_id: int) -> Optional[models.Template]:
+    return db.query(models.Template).filter(models.Template.id == template_id).first()
+
+
+def create_template(db: Session, data: schemas.TemplateCreate) -> models.Template:
+    obj = models.Template(**data.dict())
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+def update_template(db: Session, template_id: int, data: schemas.TemplateUpdate) -> Optional[models.Template]:
+    obj = get_template(db, template_id)
+    if not obj:
         return None
-
-    db.delete(template)
+    for k, v in data.dict(exclude_unset=True).items():
+        setattr(obj, k, v)
+    db.add(obj)
     db.commit()
-    return {"status": "deleted"}
+    db.refresh(obj)
+    return obj
 
 
-# --------------------------------------------------
-#   TEMPLATE PORTS
-# --------------------------------------------------
-def create_template_port(db: Session, template_id: int, data: TemplatePortCreate):
-    port = TemplatePort(template_id=template_id, **data.dict())
-    db.add(port)
+def delete_template(db: Session, template_id: int) -> bool:
+    obj = get_template(db, template_id)
+    if not obj:
+        return False
+    db.delete(obj)
     db.commit()
-    db.refresh(port)
-    return port
+    return True
 
 
-def get_template_ports(db: Session, template_id: int):
-    return (
-        db.query(TemplatePort)
-        .filter(TemplatePort.template_id == template_id)
-        .all()
-    )
+# Template ports
+def get_template_ports(db: Session, template_id: int) -> List[models.TemplatePort]:
+    return db.query(models.TemplatePort).filter(models.TemplatePort.template_id == template_id).all()
 
 
-# --------------------------------------------------
-#   DEVICE CRUD
-# --------------------------------------------------
-def get_devices(db: Session):
-    return db.query(Device).all()
+def get_template_port(db: Session, port_id: int) -> Optional[models.TemplatePort]:
+    return db.query(models.TemplatePort).filter(models.TemplatePort.id == port_id).first()
 
 
-def get_device(db: Session, device_id: int):
-    return db.query(Device).filter(Device.id == device_id).first()
-
-
-def create_device(db: Session, data: DeviceCreate):
-    device = Device(**data.dict())
-    db.add(device)
+def create_template_port(db: Session, template_id: int, data: schemas.TemplatePortCreate) -> models.TemplatePort:
+    obj = models.TemplatePort(**data.dict(), template_id=template_id)
+    db.add(obj)
     db.commit()
-    db.refresh(device)
-    return device
+    db.refresh(obj)
+    return obj
 
 
-def update_device(db: Session, device_id: int, data: DeviceUpdate):
-    device = get_device(db, device_id)
-    if not device:
+def update_template_port(db: Session, port_id: int, data: schemas.TemplatePortUpdate) -> Optional[models.TemplatePort]:
+    obj = get_template_port(db, port_id)
+    if not obj:
         return None
-
-    for key, value in data.dict(exclude_unset=True).items():
-        setattr(device, key, value)
-
+    for k, v in data.dict(exclude_unset=True).items():
+        setattr(obj, k, v)
+    db.add(obj)
     db.commit()
-    db.refresh(device)
-    return device
+    db.refresh(obj)
+    return obj
 
 
-def delete_device(db: Session, device_id: int):
-    device = get_device(db, device_id)
-    if not device:
+def delete_template_port(db: Session, port_id: int) -> bool:
+    obj = get_template_port(db, port_id)
+    if not obj:
+        return False
+    db.delete(obj)
+    db.commit()
+    return True
+
+
+# Devices
+def get_devices(db: Session) -> List[models.Device]:
+    return db.query(models.Device).all()
+
+
+def get_device(db: Session, device_id: int) -> Optional[models.Device]:
+    return db.query(models.Device).filter(models.Device.id == device_id).first()
+
+
+def create_device(db: Session, payload: dict) -> models.Device:
+    obj = models.Device(**payload)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+def update_device(db: Session, device_id: int, data: schemas.DeviceUpdate) -> Optional[models.Device]:
+    obj = get_device(db, device_id)
+    if not obj:
         return None
-
-    db.delete(device)
+    for k, v in data.dict(exclude_unset=True).items():
+        setattr(obj, k, v)
+    db.add(obj)
     db.commit()
-    return {"status": "deleted"}
+    db.refresh(obj)
+    return obj
 
 
-# --------------------------------------------------
-#   DEVICE PORTS
-# --------------------------------------------------
-def get_device_ports(db: Session, device_id: int):
-    return (
-        db.query(DevicePort)
-        .filter(DevicePort.device_id == device_id)
-        .all()
-    )
+def delete_device(db: Session, device_id: int) -> bool:
+    obj = get_device(db, device_id)
+    if not obj:
+        return False
+    db.delete(obj)
+    db.commit()
+    return True
 
 
-# --------------------------------------------------
-#   INSTANTIATE TEMPLATE → CREATE DEVICE + PORTS
-# --------------------------------------------------
-def instantiate_template(db: Session, template_id: int):
-    template = get_template(db, template_id)
-    if not template:
+# Device ports
+def get_device_ports(db: Session, device_id: int) -> List[models.DevicePort]:
+    return db.query(models.DevicePort).filter(models.DevicePort.device_id == device_id).all()
+
+
+def get_device_port(db: Session, port_id: int) -> Optional[models.DevicePort]:
+    return db.query(models.DevicePort).filter(models.DevicePort.id == port_id).first()
+
+
+def create_device_port(db: Session, device_id: int, data: dict) -> models.DevicePort:
+    obj = models.DevicePort(**data, device_id=device_id)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+def update_device_port(db: Session, port_id: int, data: dict) -> Optional[models.DevicePort]:
+    obj = get_device_port(db, port_id)
+    if not obj:
         return None
-
-    # 1) CREA DEVICE
-    device = Device(
-        name=template.name,
-        color=template.color,
-        template_id=template.id,
-        x=100,
-        y=100,
-    )
-    db.add(device)
+    for k, v in data.items():
+        setattr(obj, k, v)
+    db.add(obj)
     db.commit()
-    db.refresh(device)
+    db.refresh(obj)
+    return obj
 
-    # 2) DUPLICA PORTE
-    for port in template.ports:
-        new_port = DevicePort(
-            name=port.name,
-            type=port.type,
-            device_id=device.id,
-        )
-        db.add(new_port)
 
+def delete_device_port(db: Session, port_id: int) -> bool:
+    obj = get_device_port(db, port_id)
+    if not obj:
+        return False
+    db.delete(obj)
     db.commit()
-    return device
+    return True

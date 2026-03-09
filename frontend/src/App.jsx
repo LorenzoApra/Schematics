@@ -22,7 +22,15 @@ export default function App() {
 
   function refreshDevices() {
     getDevices().then((data) => {
-      setDevices(data || []);
+      const list = data || [];
+      setDevices(list);
+
+      // sincronizza selectedDevice se presente
+      if (selectedDevice) {
+        const updated = list.find((d) => d.id === selectedDevice.id);
+        if (updated) setSelectedDevice(updated);
+        else setSelectedDevice(null);
+      }
     });
   }
 
@@ -50,9 +58,8 @@ export default function App() {
   // -------------------------
   function handleUpdateDevice(id, data) {
     updateDevice(id, data).then((updated) => {
-      setDevices((prev) =>
-        prev.map((d) => (d.id === id ? updated : d))
-      );
+      if (!updated) return;
+      setDevices((prev) => prev.map((d) => (d.id === id ? updated : d)));
       if (selectedDevice && selectedDevice.id === id) {
         setSelectedDevice(updated);
       }
@@ -83,11 +90,11 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* SIDEBAR */}
       <DeviceSidebar
         devices={devices}
         selectedDevice={selectedDevice}
         selectedDevicePorts={selectedDevicePorts}
+        onSelectDevice={handleSelectDevice}
         onUpdateDevice={handleUpdateDevice}
         onDeleteDevice={handleDeleteDevice}
         onRefreshPorts={refreshSelectedDevicePorts}
@@ -95,10 +102,11 @@ export default function App() {
         refreshDevices={refreshDevices}
       />
 
-      {/* CANVAS */}
       <Canvas
         devices={devices}
+        selectedDevice={selectedDevice}
         onSelectDevice={handleSelectDevice}
+        onUpdateDevice={handleUpdateDevice}
         refreshDevices={refreshDevices}
       />
     </div>

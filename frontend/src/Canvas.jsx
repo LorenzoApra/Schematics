@@ -1,78 +1,95 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { updateDevice } from "./api";
 
 export default function Canvas({
   devices,
   selectedDevice,
   onSelectDevice,
+  onUpdateDevice,
   refreshDevices,
 }) {
   const canvasRef = useRef(null);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const draggingRef = useRef(null); // { id, startX, startY, origX, origY }
+  const [_, setTick] = useState(0); // for re-render while dragging
 
-  // -------------------------
-  //   DRAG START
-  // -------------------------
-  function handleDragStart(e, device) {
-    setIsDragging(true);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    dragOffset.current = {
-      x: e.clientX - rect.left - device.x,
-      y: e.clientY - rect.top - device.y,
+    function onPointerMove(e) {
+      if (!draggingRef.current) return;
+      const rect = canvas.getBoundingClientRect();
+      const { startX, startY, origX, origY } = draggingRef.current;
+      const x = Math.round(origX + (e.clientX - startX));
+      const y = Math.round(origY + (e.clientY - startY));
+      // update local position for immediate feedback
+      draggingRef.current.currentX = x;
+      draggingRef.current.currentY = y;
+      setTick((t) => t + 1);
+    }
+
+    function onPointerUp(e) {
+      if (!draggingRef.current) return;
+      const { id, currentX, currentY } = draggingRef.current;
+      // finalize: send update to backend
+      updateDevice(id, { x: currentX, y: currentY }).then((updated) => {
+        refreshDevices();
+        if (onUpdateDevice && updated) onUpdateDevice(id, updated);
+      });
+      draggingRef.current = null;
+      canvas.releasePointerCapture(e.pointerId);
+    }
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
     };
+  }, [refreshDevices, onUpdateDevice]);
 
-    e.dataTransfer.setData("deviceId", device.id);
-    e.dataTransfer.effectAllowed = "move";
-  }
-
-  // -------------------------
-  //   DROP → UPDATE POSITION
-  // -------------------------
-  function handleDrop(e) {
-    const deviceId = e.dataTransfer.getData("deviceId");
-    if (!deviceId) return;
-
+  function handlePointerDown(e, device) {
+    // only left button
+    if (e.button !== 0) return;
     const rect = canvasRef.current.getBoundingClientRect();
-
-    const x = e.clientX - rect.left - dragOffset.current.x;
-    const y = e.clientY - rect.top - dragOffset.current.y;
-
-    updateDevice(deviceId, { x, y }).then(() => {
-      refreshDevices();
-      setIsDragging(false);
-    });
-  }
-
-  function allowDrop(e) {
+    draggingRef.current = {
+      id: device.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: device.x ?? 100,
+      origY: device.y ?? 100,
+      currentX: device.x ?? 100,
+      currentY: device.y ?? 100,
+    };
+    // capture pointer to ensure we get pointerup even if cursor leaves element
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    // prevent text selection
     e.preventDefault();
   }
 
-  // -------------------------
-  //   CLICK DEVICE
-  // -------------------------
   function handleClick(device) {
-    if (isDragging) return; // evita click durante drag
+    // if draggingRef is active and id matches, ignore click
+    if (draggingRef.current && draggingRef.current.id === device.id) return;
     onSelectDevice(device);
   }
 
-  // -------------------------
-  //   RENDER DEVICE BOX
-  // -------------------------
   function renderDevice(device) {
     const isSelected = selectedDevice?.id === device.id;
+    // if currently dragging this device, use live coords
+    const live =
+      draggingRef.current && draggingRef.current.id === device.id
+        ? { left: draggingRef.current.currentX, top: draggingRef.current.currentY }
+        : { left: device.x ?? 100, top: device.y ?? 100 };
 
     return (
       <div
         key={device.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, device)}
+        onPointerDown={(e) => handlePointerDown(e, device)}
         onClick={() => handleClick(device)}
         style={{
           position: "absolute",
-          left: device.x ?? 100,
-          top: device.y ?? 100,
+          left: live.left,
+          top: live.top,
           width: 140,
           padding: "10px",
           borderRadius: "6px",
@@ -81,12 +98,10 @@ export default function Canvas({
           userSelect: "none",
           textAlign: "center",
           fontWeight: "bold",
-          border: isSelected ? "3px solid yellow" : "2px solid white",
+          border: isSelected ? "3px solid #ffd54f" : "2px solid white",
           color: "white",
           zIndex: isSelected ? 20 : 10,
-          boxShadow: isSelected
-            ? "0 0 10px yellow"
-            : "0 0 4px rgba(0,0,0,0.4)",
+          boxShadow: isSelected ? "0 0 12px rgba(255,213,79,0.6)" : "none",
         }}
       >
         {device.name}
@@ -94,14 +109,9 @@ export default function Canvas({
     );
   }
 
-  // -------------------------
-  //   MAIN RENDER
-  // -------------------------
   return (
     <div
       ref={canvasRef}
-      onDrop={handleDrop}
-      onDragOver={allowDrop}
       style={{
         flex: 1,
         position: "relative",

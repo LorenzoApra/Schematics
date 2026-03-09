@@ -1,17 +1,20 @@
-from pydantic import BaseModel
 from typing import Optional, List
+from pydantic import BaseModel
 
 
-# --------------------------------------------------
-#   CATEGORY
-# --------------------------------------------------
+# Category
 class CategoryBase(BaseModel):
     name: str
-    color: Optional[str] = "#cccccc"
+    color: Optional[str] = None
 
 
 class CategoryCreate(CategoryBase):
     pass
+
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    color: Optional[str] = None
 
 
 class Category(CategoryBase):
@@ -21,9 +24,7 @@ class Category(CategoryBase):
         orm_mode = True
 
 
-# --------------------------------------------------
-#   TEMPLATE PORT
-# --------------------------------------------------
+# TemplatePort
 class TemplatePortBase(BaseModel):
     name: str
     type: str
@@ -33,37 +34,44 @@ class TemplatePortCreate(TemplatePortBase):
     pass
 
 
+class TemplatePortUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+
+
 class TemplatePort(TemplatePortBase):
     id: int
+    template_id: int
 
     class Config:
         orm_mode = True
 
 
-# --------------------------------------------------
-#   TEMPLATE
-# --------------------------------------------------
+# Template
 class TemplateBase(BaseModel):
     name: str
-    color: Optional[str] = "#cccccc"
-    category_id: Optional[int]
+    color: Optional[str] = None
+    category_id: Optional[int] = None
 
 
 class TemplateCreate(TemplateBase):
     pass
 
 
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    color: Optional[str] = None
+    category_id: Optional[int] = None
+
+
 class Template(TemplateBase):
     id: int
-    ports: List[TemplatePort] = []
 
     class Config:
         orm_mode = True
 
 
-# --------------------------------------------------
-#   DEVICE PORT
-# --------------------------------------------------
+# DevicePort
 class DevicePortBase(BaseModel):
     name: str
     type: str
@@ -73,22 +81,26 @@ class DevicePortCreate(DevicePortBase):
     pass
 
 
+class DevicePortUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+
+
 class DevicePort(DevicePortBase):
     id: int
+    device_id: int
 
     class Config:
         orm_mode = True
 
 
-# --------------------------------------------------
-#   DEVICE
-# --------------------------------------------------
+# Device
 class DeviceBase(BaseModel):
     name: str
-    color: Optional[str] = "#cccccc"
-    x: Optional[int] = 100
-    y: Optional[int] = 100
-    template_id: Optional[int]
+    color: Optional[str] = None
+    x: Optional[int] = None
+    y: Optional[int] = None
+    template_id: Optional[int] = None
 
 
 class DeviceCreate(DeviceBase):
@@ -96,15 +108,15 @@ class DeviceCreate(DeviceBase):
 
 
 class DeviceUpdate(BaseModel):
-    name: Optional[str]
-    color: Optional[str]
-    x: Optional[int]
-    y: Optional[int]
+    name: Optional[str] = None
+    color: Optional[str] = None
+    x: Optional[int] = None
+    y: Optional[int] = None
+    template_id: Optional[int] = None
 
 
 class Device(DeviceBase):
     id: int
-    ports: List[DevicePort] = []
 
     class Config:
         orm_mode = True

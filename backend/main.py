@@ -1,41 +1,61 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
-from database import Base, engine
-from routers import templates, devices, categories
+from . import models, database, crud, schemas
+from .templates import router as templates_router
+from .routers.devices import router as devices_router
 
-# --------------------------------------------------
-#   CREATE DATABASE TABLES
-# --------------------------------------------------
-Base.metadata.create_all(bind=engine)
+# Create DB tables
+models.Base.metadata.create_all(bind=database.engine)
 
-# --------------------------------------------------
-#   FASTAPI APP
-# --------------------------------------------------
-app = FastAPI(title="Schematics Backend", version="1.0.0")
+app = FastAPI()
 
-# --------------------------------------------------
-#   CORS (PERMETTE AL FRONTEND DI CHIAMARE L'API)
-# --------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # puoi restringerlo a ["http://localhost:5173"] se vuoi
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --------------------------------------------------
-#   ROUTERS
-# --------------------------------------------------
-app.include_router(templates.router)
-app.include_router(devices.router)
-app.include_router(categories.router)
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-
-# --------------------------------------------------
-#   ROOT ENDPOINT (OPZIONALE)
-# --------------------------------------------------
 @app.get("/")
 def root():
     return {"status": "ok", "message": "Schematics backend is running"}
+
+# -------------------------
+# CATEGORIES
+# -------------------------
+
+@app.get("/categories", response_model=list[schemas.Category])
+def list_categories(db: Session = Depends(get_db)):
+    return crud.get_categories(db)
+
+@app.post("/categories", response_model=schemas.Category)
+def create_category(cat_in: schemas.CategoryCreate, db: Session = Depends(get_db)):
+    return crud.create_category(db, cat_in)
+
+@app.put("/categories/{category_id}", response_model=schemas.Category)
+def update_category(category_id: int, cat_in: schemas.CategoryUpdate, db: Session = Depends(get_db)):
+    updated = crud.update_category(db, category_id, cat_in)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return updated
+
+@app.delete("/categories/{category_id}", response_model=dict)
+def delete_category(category_id: int, db: Session = Depends(get_db)):
+    ok = crud.delete_category(db, category_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"ok": True}
+
+# Routers
+app.include_router(templates_router)
+app.include_router(devices_router)

@@ -1,8 +1,6 @@
 const API_URL = "http://localhost:8000";
 
-// -------------------------
-//   GENERIC REQUEST
-// -------------------------
+// Generic request wrapper robusto
 async function apiRequest(path, options = {}) {
   try {
     const res = await fetch(`${API_URL}${path}`, {
@@ -10,10 +8,8 @@ async function apiRequest(path, options = {}) {
       ...options,
     });
 
-    // Se la risposta non è JSON valido, evita crash
     const text = await res.text();
     let data = null;
-
     try {
       data = text ? JSON.parse(text) : null;
     } catch {
@@ -22,7 +18,7 @@ async function apiRequest(path, options = {}) {
 
     if (!res.ok) {
       console.error("API ERROR:", res.status, data);
-      throw new Error(data?.detail || "API Error");
+      throw new Error(data?.detail || `API Error ${res.status}`);
     }
 
     return data;
@@ -32,52 +28,42 @@ async function apiRequest(path, options = {}) {
   }
 }
 
-// -------------------------
-//   WRAPPERS
-// -------------------------
-function apiGet(path) {
-  return apiRequest(path, { method: "GET" });
-}
+// Wrappers
+export const apiGet = (path) => apiRequest(path, { method: "GET" });
+export const apiPost = (path, body) =>
+  apiRequest(path, { method: "POST", body: JSON.stringify(body) });
+export const apiPut = (path, body) =>
+  apiRequest(path, { method: "PUT", body: JSON.stringify(body) });
+export const apiDelete = (path) =>
+  apiRequest(path, { method: "DELETE" });
 
-function apiPost(path, body) {
-  return apiRequest(path, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-function apiPut(path, body) {
-  return apiRequest(path, {
-    method: "PUT",
-    body: JSON.stringify(body),
-  });
-}
-
-function apiDelete(path) {
-  return apiRequest(path, { method: "DELETE" });
-}
-
-// -------------------------
-//   DEVICES
-// -------------------------
-export const getDevices = () => apiGet("/devices");
-export const addDevice = (data) => apiPost("/devices", data);
+// Devices
+export const getDevices = () => apiGet("/devices/");
+export const addDevice = (data) => apiPost("/devices/", data);
 export const updateDevice = (id, data) => apiPut(`/devices/${id}`, data);
 export const deleteDevice = (id) => apiDelete(`/devices/${id}`);
-export const getDevicePorts = (id) => apiGet(`/devices/${id}/ports`);
+export const getDevicePorts = (id) => apiGet(`/devices/${id}/ports/`);
 
-// -------------------------
-//   CATEGORIES
-// -------------------------
-export const getCategories = () => apiGet("/categories");
+// Categories
+export const getCategories = () => apiGet("/categories/");
+export const addCategory = (data) => apiPost("/categories/", data);
 
-// -------------------------
-//   TEMPLATES
-// -------------------------
-export const getTemplates = () => apiGet("/templates");
-export const updateTemplate = (id, data) =>
-  apiPut(`/templates/${id}`, data);
-export const deleteTemplate = (id) =>
-  apiDelete(`/templates/${id}`);
+// Templates
+export const getTemplates = () => apiGet("/templates/");
+export const addTemplate = (data) => apiPost("/templates/", data);
+export const updateTemplate = (id, data) => apiPut(`/templates/${id}`, data);
+export const deleteTemplate = (id) => apiDelete(`/templates/${id}`);
+export const addTemplatePort = (templateId, data) =>
+  apiPost(`/templates/${templateId}/ports/`, data);
+export const getTemplatePorts = (templateId) =>
+  apiGet(`/templates/${templateId}/ports/`);
 export const instantiateTemplate = (templateId) =>
-  apiPost(`/templates/${templateId}/instantiate`, {});
+  apiPost(`/templates/${templateId}/instantiate/`, {});
+
+// Device ports (device-specific)
+export const addDevicePort = (deviceId, data) =>
+  apiPost(`/devices/${deviceId}/ports/`, data);
+export const updateDevicePort = (deviceId, portId, data) =>
+  apiPut(`/devices/${deviceId}/ports/${portId}/`, data);
+export const deleteDevicePort = (deviceId, portId) =>
+  apiDelete(`/devices/${deviceId}/ports/${portId}/`);

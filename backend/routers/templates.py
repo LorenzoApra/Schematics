@@ -1,77 +1,98 @@
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_db
-import crud
-import schemas
+from . import crud, schemas, database
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
 
-# --------------------------------------------------
-#   GET ALL TEMPLATES
-# --------------------------------------------------
-@router.get("/", response_model=list[schemas.Template])
-def get_templates(db: Session = Depends(get_db)):
-    return crud.get_templates(db)
+def get_db():
+  db = database.SessionLocal()
+  try:
+    yield db
+  finally:
+    db.close()
 
 
-# --------------------------------------------------
-#   CREATE TEMPLATE
-# --------------------------------------------------
+def _get_category_color(db: Session, category_id: Optional[int]) -> str:
+  if category_id is not None:
+    cat = crud.get_category(db, category_id)
+    if cat and getattr(cat, "color", None):
+      return cat.color
+  cat1000 = crud.get_category(db, 1000)
+  if cat1000 and getattr(cat1000, "color", None):
+    return cat1000.color
+  return "#cccccc"
+
+
+@router.get("/", response_model=List[schemas.Template])
+def list_templates(db: Session = Depends(get_db)):
+  return crud.get_templates(db)
+
+
 @router.post("/", response_model=schemas.Template)
-def create_template(data: schemas.TemplateCreate, db: Session = Depends(get_db)):
-    return crud.create_template(db, data)
+def create_template(template_in: schemas.TemplateCreate, db: Session = Depends(get_db)):
+  return crud.create_template(db, template_in)
 
 
-# --------------------------------------------------
-#   UPDATE TEMPLATE
-# --------------------------------------------------
 @router.put("/{template_id}", response_model=schemas.Template)
-def update_template(template_id: int, data: dict, db: Session = Depends(get_db)):
-    updated = crud.update_template(db, template_id, data)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return updated
+def update_template(template_id: int, template_in: schemas.TemplateUpdate, db: Session = Depends(get_db)):
+  updated = crud.update_template(db, template_id, template_in)
+  if not updated:
+    raise HTTPException(status_code=404, detail="Template not found")
+  return updated
 
 
-# --------------------------------------------------
-#   DELETE TEMPLATE
-# --------------------------------------------------
-@router.delete("/{template_id}")
+@router.delete("/{template_id}", response_model=dict)
 def delete_template(template_id: int, db: Session = Depends(get_db)):
-    deleted = crud.delete_template(db, template_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return deleted
+  ok = crud.delete_template(db, template_id)
+  if not ok:
+    raise HTTPException(status_code=404, detail="Template not found")
+  return {"ok": True}
 
 
-# --------------------------------------------------
-#   GET TEMPLATE PORTS
-# --------------------------------------------------
-@router.get("/{template_id}/ports", response_model=list[schemas.TemplatePort])
-def get_template_ports(template_id: int, db: Session = Depends(get_db)):
-    return crud.get_template_ports(db, template_id)
+# ---------- TEMPLATE PORTS ----------
+
+@router.get("/{template_id}/ports", response_model=List[schemas.TemplatePort])
+def list_template_ports(template_id: int, db: Session = Depends(get_db)):
+  tpl = crud.get_template(db, template_id)
+  if not tpl:
+    raise HTTPException(status_code=404, detail="Template not found")
+  return crud.get_template_ports(db, template_id)
 
 
-# --------------------------------------------------
-#   ADD PORT TO TEMPLATE
-# --------------------------------------------------
 @router.post("/{template_id}/ports", response_model=schemas.TemplatePort)
-def add_template_port(
-    template_id: int,
-    data: schemas.TemplatePortCreate,
-    db: Session = Depends(get_db),
-):
-    return crud.create_template_port(db, template_id, data)
+def create_template_port(template_id: int, port_in: schemas.TemplatePortCreate, db: Session = Depends(get_db)):
+  tpl = crud.get_template(db, template_id)
+  if not tpl:
+    raise HTTPException(status_code=404, detail="Template not found")
+  return crud.create_template_port(db, template_id, port_in)
 
 
-# --------------------------------------------------
-#   INSTANTIATE TEMPLATE → CREATE DEVICE + PORTS
-# --------------------------------------------------
+# ---------- INSTANTIATE TEMPLATE ----------
+
 @router.post("/{template_id}/instantiate", response_model=schemas.Device)
 def instantiate_template(template_id: int, db: Session = Depends(get_db)):
-    device = crud.instantiate_template(db, template_id)
-    if not device:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return device
+  tpl = crud.get_template(db, template_id)
+  if not tpl:
+    raise HTTPException(status_code=404, detail="Template not found")
+
+  color = _get_category_color(db, tpl.category_id)
+
+  payload = {
+    "name": tpl.name,
+    "color": color,
+    "template_id": tpl.id,
+    "x": 100,
+    "y": 100,
+  }
+
+  device = crud.create_device(db, payload)
+
+  template_ports = crud.get_template_ports(db, tpl.id)
+  for tp in template_ports:
+    crud.create_device_port(db, device.id, {"name": tp.name, "type": tp.type})
+
+  return device
