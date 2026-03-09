@@ -1,51 +1,78 @@
-import { Stage, Layer, Rect, Text } from "react-konva";
+import { useEffect, useRef } from "react";
+import { updateDevice } from "./api";
 
-export default function Canvas({ devices, onMove, onDelete, onEdit }) {
+export default function Canvas({ devices, onSelectDevice, refreshDevices }) {
+  const canvasRef = useRef(null);
+
+  // -------------------------
+  //   DRAG DEVICE ON CANVAS
+  // -------------------------
+  function handleDragStart(e, device) {
+    e.dataTransfer.setData("deviceId", device.id);
+  }
+
+  function handleDrop(e) {
+    const deviceId = e.dataTransfer.getData("deviceId");
+    if (!deviceId) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left - 50;
+    const y = e.clientY - rect.top - 25;
+
+    updateDevice(deviceId, { x, y }).then(() => {
+      refreshDevices();
+    });
+  }
+
+  function allowDrop(e) {
+    e.preventDefault();
+  }
+
+  // -------------------------
+  //   RENDER DEVICE BOX
+  // -------------------------
+  function renderDevice(device) {
+    return (
+      <div
+        key={device.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, device)}
+        onClick={() => onSelectDevice(device)}
+        style={{
+          position: "absolute",
+          left: device.x,
+          top: device.y,
+          width: 120,
+          padding: "10px",
+          borderRadius: "6px",
+          background: device.color || "#ddd",
+          cursor: "pointer",
+          userSelect: "none",
+          textAlign: "center",
+          fontWeight: "bold",
+          border: "2px solid #333",
+        }}
+      >
+        {device.name}
+      </div>
+    );
+  }
+
   return (
-    <Stage width={1200} height={800} style={{ background: "#fafafa" }}>
-      <Layer>
-        {devices.map((d) => (
-          <Rect
-            key={d.id}
-            x={d.x}
-            y={d.y}
-            width={120}
-            height={60}
-            fill={d.color || "#ddd"}
-            draggable
-            onDragEnd={(e) => onMove(d.id, e.target.x(), e.target.y())}
-            onDblClick={() => {
-              const newName = prompt("New name:", d.name);
-              const newColor = prompt("New color (hex):", d.color);
-              if (newName || newColor) {
-                onEdit(d.id, newName || d.name, newColor || d.color);
-              }
-            }}
-          />
-        ))}
+    <div
+      ref={canvasRef}
+      onDrop={handleDrop}
+      onDragOver={allowDrop}
+    style={{
+  flex: 1,
+  position: "relative",
+  background: "pink",   // 👈 colore vistoso
+  border: "3px solid red",
+  overflow: "hidden",
+}}
 
-        {devices.map((d) => (
-          <Text
-            key={d.id + "_t"}
-            x={d.x + 10}
-            y={d.y + 20}
-            text={d.name}
-            fill="black"
-          />
-        ))}
-
-        {devices.map((d) => (
-          <Text
-            key={d.id + "_del"}
-            text="✕"
-            x={d.x + 100}
-            y={d.y - 10}
-            fill="red"
-            fontSize={20}
-            onClick={() => onDelete(d.id)}
-          />
-        ))}
-      </Layer>
-    </Stage>
+    >
+      {devices.map(renderDevice)}
+    </div>
   );
 }

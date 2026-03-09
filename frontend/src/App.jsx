@@ -1,48 +1,100 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Canvas from "./Canvas";
 import DeviceSidebar from "./DeviceSidebar";
-import { getDevices, addDevice, updateDevice, deleteDevice } from "./api";
+import {
+  getDevices,
+  addDevice,
+  updateDevice,
+  deleteDevice,
+  getDevicePorts,
+} from "./api";
 
 export default function App() {
   const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [selectedDevicePorts, setSelectedDevicePorts] = useState([]);
 
+  // -------------------------
+  //   LOAD DEVICES
+  // -------------------------
   useEffect(() => {
-    getDevices().then(setDevices);
+    refreshDevices();
   }, []);
 
-  function handleAdd(name, color) {
-    addDevice({ name, color, x: 100, y: 100 }).then((d) =>
-      setDevices([...devices, d])
-    );
+  function refreshDevices() {
+    getDevices().then(setDevices);
   }
 
-  function handleMove(id, x, y) {
-    updateDevice(id, { x, y });
-    setDevices(devices.map((d) => (d.id === id ? { ...d, x, y } : d)));
+  // -------------------------
+  //   SELECT DEVICE
+  // -------------------------
+  function handleSelectDevice(device) {
+    setSelectedDevice(device);
+
+    getDevicePorts(device.id).then((ports) => {
+      setSelectedDevicePorts(ports);
+    });
   }
 
-  function handleDelete(id) {
-    deleteDevice(id);
-    setDevices(devices.filter((d) => d.id !== id));
+  // -------------------------
+  //   CLEAR SELECTION
+  // -------------------------
+  function clearSelection() {
+    setSelectedDevice(null);
+    setSelectedDevicePorts([]);
   }
 
-  function handleEdit(id, newName, newColor) {
-    updateDevice(id, { name: newName, color: newColor });
-    setDevices(
-      devices.map((d) =>
-        d.id === id ? { ...d, name: newName, color: newColor } : d
-      )
-    );
+  // -------------------------
+  //   UPDATE DEVICE (name/color)
+  // -------------------------
+  function handleUpdateDevice(id, data) {
+    updateDevice(id, data).then((updated) => {
+      setDevices((prev) =>
+        prev.map((d) => (d.id === id ? updated : d))
+      );
+      setSelectedDevice(updated);
+    });
+  }
+
+  // -------------------------
+  //   DELETE DEVICE
+  // -------------------------
+  function handleDeleteDevice(id) {
+    deleteDevice(id).then(() => {
+      setDevices((prev) => prev.filter((d) => d.id !== id));
+      clearSelection();
+    });
+  }
+
+  // -------------------------
+  //   UPDATE PORT LIST
+  // -------------------------
+  function refreshSelectedDevicePorts() {
+    if (!selectedDevice) return;
+    getDevicePorts(selectedDevice.id).then(setSelectedDevicePorts);
   }
 
   return (
-    <div style={{ display: "flex" }}>
-      <DeviceSidebar onAdd={handleAdd} />
+     <div style={{ display: "flex", height: "100vh" }}>
+      
+      {/* SIDEBAR */}
+     <DeviceSidebar
+  devices={devices}
+  selectedDevice={selectedDevice}
+  selectedDevicePorts={selectedDevicePorts}
+  onUpdateDevice={handleUpdateDevice}
+  onDeleteDevice={handleDeleteDevice}
+  onRefreshPorts={refreshSelectedDevicePorts}
+  onBack={clearSelection}
+  refreshDevices={refreshDevices}
+/>
+
+
+      {/* CANVAS */}
       <Canvas
         devices={devices}
-        onMove={handleMove}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
+        onSelectDevice={handleSelectDevice}
+        refreshDevices={refreshDevices}
       />
     </div>
   );
