@@ -1,15 +1,22 @@
+/* --------------------------------------------------
+   ROOT LAYOUT FIX
+   Necessario per far funzionare il flex layout
+-------------------------------------------------- */
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
 }
 
+/* Il root contiene App.jsx, che è un flex-row */
 #root {
   display: flex;
   flex-direction: column;
 }
 
-
+/* --------------------------------------------------
+   (Il resto è quello standard di Vite/React)
+-------------------------------------------------- */
 
 .logo {
   height: 6em;
@@ -17,9 +24,11 @@ html, body, #root {
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }

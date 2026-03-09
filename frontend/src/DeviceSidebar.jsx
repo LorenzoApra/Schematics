@@ -16,7 +16,7 @@ export default function DeviceSidebar({
   onDeleteDevice,
   onRefreshPorts,
   onBack,
-  refreshDevices,          // 👈 AGGIUNTO
+  refreshDevices,
 }) {
   const [categories, setCategories] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -31,23 +31,21 @@ export default function DeviceSidebar({
   }, []);
 
   function refreshCategories() {
-    getCategories().then(setCategories);
+    getCategories().then((data) => setCategories(data || []));
   }
 
   function refreshTemplates() {
-    getTemplates().then(setTemplates);
+    getTemplates().then((data) => setTemplates(data || []));
   }
 
   // -------------------------
-  //   INSTANTIATE TEMPLATE
+  //   INSTANTIATE TEMPLATE → CREATE DEVICE
   // -------------------------
-function handleInstantiate(templateId) {
-  instantiateTemplate(templateId).then(() => {
-    refreshDevices();   // aggiorna i device
-  });
-}
-
-
+  function handleInstantiate(templateId) {
+    instantiateTemplate(templateId).then(() => {
+      refreshDevices();      // 👈 niente reload, aggiorna solo i device
+    });
+  }
 
   // -------------------------
   //   SIDEBAR MODES
@@ -94,10 +92,12 @@ function handleInstantiate(templateId) {
                     alignItems: "center",
                   }}
                 >
+                  {/* CREA DEVICE */}
                   <span onClick={() => handleInstantiate(t.id)}>
                     ➕ {t.name}
                   </span>
 
+                  {/* APRI PROPRIETÀ TEMPLATE */}
                   <span
                     onClick={() => setSelectedTemplate(t)}
                     style={{
@@ -150,14 +150,13 @@ function handleInstantiate(templateId) {
   // -------------------------
   return (
     <div
-       style={{
-    width: 320,
-    flexShrink: 0,   
-     background: "#ffffff",
-    borderRight: "2px solid #ccc",
-    overflowY: "auto",
-  }}
-
+      style={{
+        width: 320,
+        flexShrink: 0,     // 👈 impedisce alla sidebar di espandersi
+        background: "#ffffff",
+        borderRight: "2px solid #ccc",
+        overflowY: "auto",
+      }}
     >
       {mode === "library" && renderLibrary()}
       {mode === "device" && renderDeviceProperties()}
@@ -165,5 +164,3 @@ function handleInstantiate(templateId) {
     </div>
   );
 }
-
-

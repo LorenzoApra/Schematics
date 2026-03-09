@@ -3,7 +3,6 @@ import Canvas from "./Canvas";
 import DeviceSidebar from "./DeviceSidebar";
 import {
   getDevices,
-  addDevice,
   updateDevice,
   deleteDevice,
   getDevicePorts,
@@ -13,8 +12,6 @@ export default function App() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [selectedDevicePorts, setSelectedDevicePorts] = useState([]);
-  console.log("Devices:", devices);
-
 
   // -------------------------
   //   LOAD DEVICES
@@ -24,7 +21,9 @@ export default function App() {
   }, []);
 
   function refreshDevices() {
-    getDevices().then(setDevices);
+    getDevices().then((data) => {
+      setDevices(data || []);
+    });
   }
 
   // -------------------------
@@ -34,7 +33,7 @@ export default function App() {
     setSelectedDevice(device);
 
     getDevicePorts(device.id).then((ports) => {
-      setSelectedDevicePorts(ports);
+      setSelectedDevicePorts(ports || []);
     });
   }
 
@@ -47,14 +46,16 @@ export default function App() {
   }
 
   // -------------------------
-  //   UPDATE DEVICE (name/color)
+  //   UPDATE DEVICE (name/color/pos)
   // -------------------------
   function handleUpdateDevice(id, data) {
     updateDevice(id, data).then((updated) => {
       setDevices((prev) =>
         prev.map((d) => (d.id === id ? updated : d))
       );
-      setSelectedDevice(updated);
+      if (selectedDevice && selectedDevice.id === id) {
+        setSelectedDevice(updated);
+      }
     });
   }
 
@@ -64,7 +65,9 @@ export default function App() {
   function handleDeleteDevice(id) {
     deleteDevice(id).then(() => {
       setDevices((prev) => prev.filter((d) => d.id !== id));
-      clearSelection();
+      if (selectedDevice && selectedDevice.id === id) {
+        clearSelection();
+      }
     });
   }
 
@@ -73,25 +76,24 @@ export default function App() {
   // -------------------------
   function refreshSelectedDevicePorts() {
     if (!selectedDevice) return;
-    getDevicePorts(selectedDevice.id).then(setSelectedDevicePorts);
+    getDevicePorts(selectedDevice.id).then((ports) =>
+      setSelectedDevicePorts(ports || [])
+    );
   }
 
   return (
-     <div style={{ display: "flex", height: "100vh" }}>
-      
+    <div style={{ display: "flex", height: "100vh" }}>
       {/* SIDEBAR */}
-<DeviceSidebar
-  devices={devices}
-  selectedDevice={selectedDevice}
-  selectedDevicePorts={selectedDevicePorts}
-  onUpdateDevice={handleUpdateDevice}
-  onDeleteDevice={handleDeleteDevice}
-  onRefreshPorts={refreshSelectedDevicePorts}
-  onBack={clearSelection}
-  refreshDevices={refreshDevices}   // 👈 IMPORTANTE
-/>
-
-
+      <DeviceSidebar
+        devices={devices}
+        selectedDevice={selectedDevice}
+        selectedDevicePorts={selectedDevicePorts}
+        onUpdateDevice={handleUpdateDevice}
+        onDeleteDevice={handleDeleteDevice}
+        onRefreshPorts={refreshSelectedDevicePorts}
+        onBack={clearSelection}
+        refreshDevices={refreshDevices}
+      />
 
       {/* CANVAS */}
       <Canvas
@@ -102,4 +104,3 @@ export default function App() {
     </div>
   );
 }
-

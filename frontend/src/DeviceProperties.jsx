@@ -1,13 +1,3 @@
-import { useState, useEffect } from "react";
-import {
-  addDevicePort,
-  updateDevicePort,
-  deleteDevicePort,
-  reorderDevicePorts,
-} from "./api";
-
-import PortTypeSelector from "./PortTypeSelector";
-
 export default function DeviceProperties({
   device,
   ports,
@@ -16,221 +6,100 @@ export default function DeviceProperties({
   onRefreshPorts,
   onBack,
 }) {
-  const [localPorts, setLocalPorts] = useState([]);
+  if (!device) return null;
 
-  useEffect(() => {
-    setLocalPorts(ports);
-  }, [ports]);
-
-  // -------------------------
-  //   FILTER IN / OUT
-  // -------------------------
-  const inPorts = localPorts.filter((p) => p.direction === "in");
-  const outPorts = localPorts.filter((p) => p.direction === "out");
-
-  // -------------------------
-  //   ADD PORT
-  // -------------------------
-  function handleAddPort(direction) {
-    addDevicePort(device.id, {
-      name: direction === "in" ? "IN" : "OUT",
-      type: "HDMI",
-      direction,
-    }).then(() => onRefreshPorts());
-  }
-
-  // -------------------------
-  //   UPDATE PORT NAME
-  // -------------------------
-  function handleNameChange(portId, newName) {
-    updateDevicePort(portId, { name: newName }).then(() =>
-      onRefreshPorts()
-    );
-  }
-
-  // -------------------------
-  //   UPDATE PORT TYPE
-  // -------------------------
-  function handleTypeChange(portId, newType) {
-    updateDevicePort(portId, { type: newType }).then(() =>
-      onRefreshPorts()
-    );
-  }
-
-  // -------------------------
-  //   DELETE PORT
-  // -------------------------
-  function handleDeletePort(portId) {
-    deleteDevicePort(portId).then(() => onRefreshPorts());
-  }
-
-  // -------------------------
-  //   DRAG & DROP
-  // -------------------------
-  const [draggingId, setDraggingId] = useState(null);
-
-  function handleDragStart(portId) {
-    setDraggingId(portId);
-  }
-
-  function handleDragEnter(portId, direction) {
-    if (!draggingId || draggingId === portId) return;
-
-    const list = direction === "in" ? [...inPorts] : [...outPorts];
-    const draggingIndex = list.findIndex((p) => p.id === draggingId);
-    const targetIndex = list.findIndex((p) => p.id === portId);
-
-    if (draggingIndex === -1 || targetIndex === -1) return;
-
-    const newList = [...list];
-    const [moved] = newList.splice(draggingIndex, 1);
-    newList.splice(targetIndex, 0, moved);
-
-    const updated = direction === "in"
-      ? [...newList, ...outPorts]
-      : [...inPorts, ...newList];
-
-    setLocalPorts(updated);
-  }
-
-  function handleDragEnd(direction) {
-    const list = direction === "in" ? inPorts : outPorts;
-    const order = list.map((p) => p.id);
-
-    reorderDevicePorts(device.id, direction, order).then(() => {
-      setDraggingId(null);
-      onRefreshPorts();
-    });
-  }
-
-  // -------------------------
-  //   RENDER PORT ROW
-  // -------------------------
-  function renderPort(port, direction) {
-    return (
-      <div
-        key={port.id}
-        draggable
-        onDragStart={() => handleDragStart(port.id)}
-        onDragEnter={() => handleDragEnter(port.id, direction)}
-        onDragEnd={() => handleDragEnd(direction)}
+  return (
+    <div style={{ padding: 20 }}>
+      {/* BACK BUTTON */}
+      <button
+        onClick={onBack}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 0",
-          borderBottom: "1px solid #ddd",
-          cursor: "grab",
+          marginBottom: 20,
+          padding: "6px 10px",
+          cursor: "pointer",
         }}
       >
-        {/* DRAG HANDLE */}
-        <span style={{ cursor: "grab", fontSize: 18 }}>⠿</span>
+        ← Back
+      </button>
 
-        {/* TYPE SELECTOR */}
-        <PortTypeSelector
-          value={port.type}
-          onChange={(v) => handleTypeChange(port.id, v)}
-        />
+      <h2 style={{ marginBottom: 10 }}>Device Properties</h2>
 
-        {/* NAME INPUT */}
+      {/* NAME */}
+      <div style={{ marginBottom: 15 }}>
+        <label style={{ display: "block", marginBottom: 5 }}>Name</label>
         <input
-          value={port.name}
-          onChange={(e) => handleNameChange(port.id, e.target.value)}
+          type="text"
+          value={device.name}
+          onChange={(e) =>
+            onUpdateDevice(device.id, { name: e.target.value })
+          }
           style={{
-            flex: 1,
-            padding: "4px 6px",
+            width: "100%",
+            padding: 6,
             borderRadius: 4,
             border: "1px solid #ccc",
           }}
         />
-
-        {/* DELETE */}
-        <span
-          onClick={() => handleDeletePort(port.id)}
-          style={{
-            cursor: "pointer",
-            color: "red",
-            fontWeight: "bold",
-            padding: "0 6px",
-          }}
-        >
-          ✕
-        </span>
       </div>
-    );
-  }
-
-  // -------------------------
-  //   MAIN RENDER
-  // -------------------------
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>Device Properties</h2>
-
-      {/* NAME */}
-      <label style={{ fontWeight: "bold" }}>Name</label>
-      <input
-        value={device.name}
-        onChange={(e) => onUpdateDevice(device.id, { name: e.target.value })}
-        style={{
-          width: "100%",
-          padding: "6px",
-          marginBottom: 10,
-          borderRadius: 4,
-          border: "1px solid #ccc",
-        }}
-      />
 
       {/* COLOR */}
-      <label style={{ fontWeight: "bold" }}>Color</label>
-      <input
-        type="color"
-        value={device.color}
-        onChange={(e) => onUpdateDevice(device.id, { color: e.target.value })}
-        style={{ width: "100%", marginBottom: 20 }}
-      />
+      <div style={{ marginBottom: 15 }}>
+        <label style={{ display: "block", marginBottom: 5 }}>Color</label>
+        <input
+          type="color"
+          value={device.color || "#cccccc"}
+          onChange={(e) =>
+            onUpdateDevice(device.id, { color: e.target.value })
+          }
+          style={{
+            width: "100%",
+            height: 40,
+            padding: 0,
+            border: "1px solid #ccc",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        />
+      </div>
 
-      {/* IN PORTS */}
-      <h3>IN Ports</h3>
-      {inPorts.map((p) => renderPort(p, "in"))}
-      <button onClick={() => handleAddPort("in")}>+ Add IN</button>
+      {/* PORT LIST */}
+      <div style={{ marginBottom: 20 }}>
+        <h3>Ports</h3>
 
-      {/* OUT PORTS */}
-      <h3 style={{ marginTop: 20 }}>OUT Ports</h3>
-      {outPorts.map((p) => renderPort(p, "out"))}
-      <button onClick={() => handleAddPort("out")}>+ Add OUT</button>
+        <button
+          onClick={onRefreshPorts}
+          style={{
+            marginBottom: 10,
+            padding: "6px 10px",
+            cursor: "pointer",
+          }}
+        >
+          Refresh Ports
+        </button>
 
-      {/* DELETE DEVICE */}
+        <ul>
+          {ports.map((p) => (
+            <li key={p.id}>
+              {p.name} ({p.type})
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* DELETE BUTTON */}
       <button
         onClick={() => onDeleteDevice(device.id)}
         style={{
-          marginTop: 30,
-          width: "100%",
-          padding: 10,
-          background: "red",
+          background: "#ff4444",
           color: "white",
+          padding: "8px 12px",
           border: "none",
-          borderRadius: 6,
+          borderRadius: 4,
           cursor: "pointer",
+          marginTop: 20,
         }}
       >
         Delete Device
-      </button>
-
-      {/* BACK */}
-      <button
-        onClick={onBack}
-        style={{
-          marginTop: 10,
-          width: "100%",
-          padding: 10,
-          background: "#ccc",
-          border: "none",
-          borderRadius: 6,
-          cursor: "pointer",
-        }}
-      >
-        Back to Library
       </button>
     </div>
   );
