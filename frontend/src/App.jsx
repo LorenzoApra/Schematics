@@ -13,6 +13,8 @@ export default function App() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [selectedDevicePorts, setSelectedDevicePorts] = useState([]);
+  console.log("Devices:", devices);
+
 
   // -------------------------
   //   LOAD DEVICES
@@ -78,7 +80,7 @@ export default function App() {
      <div style={{ display: "flex", height: "100vh" }}>
       
       {/* SIDEBAR */}
-     <DeviceSidebar
+<DeviceSidebar
   devices={devices}
   selectedDevice={selectedDevice}
   selectedDevicePorts={selectedDevicePorts}
@@ -86,8 +88,9 @@ export default function App() {
   onDeleteDevice={handleDeleteDevice}
   onRefreshPorts={refreshSelectedDevicePorts}
   onBack={clearSelection}
-  refreshDevices={refreshDevices}
+  refreshDevices={refreshDevices}   // 👈 IMPORTANTE
 />
+
 
 
       {/* CANVAS */}
@@ -99,3 +102,4 @@ export default function App() {
     </div>
   );
 }
+

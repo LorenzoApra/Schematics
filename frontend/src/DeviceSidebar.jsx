@@ -43,9 +43,10 @@ export default function DeviceSidebar({
   // -------------------------
 function handleInstantiate(templateId) {
   instantiateTemplate(templateId).then(() => {
-    refreshDevices();
+    refreshDevices();   // aggiorna i device
   });
 }
+
 
 
   // -------------------------
@@ -164,3 +165,5 @@ function handleInstantiate(templateId) {
     </div>
   );
 }
+
+

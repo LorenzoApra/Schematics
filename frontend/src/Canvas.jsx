@@ -45,12 +45,14 @@ export default function Canvas({ devices, onSelectDevice, refreshDevices }) {
           width: 120,
           padding: "10px",
           borderRadius: "6px",
-          background: device.color || "#ddd",
+          background: device.color || "#ffffff",
           cursor: "pointer",
           userSelect: "none",
           textAlign: "center",
           fontWeight: "bold",
           border: "2px solid #333",
+          border: "2px solid white",
+          color: "white",
         }}
       >
         {device.name}
