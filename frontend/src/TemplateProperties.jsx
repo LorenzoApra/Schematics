@@ -1,13 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateTemplate, deleteTemplate } from "./api";
 
 export default function TemplateProperties({
   template,
   onBack,
   refreshTemplates,
+  refreshCategories,   // 👈 utile per aggiornare sidebar
 }) {
-  const [name, setName] = useState(template.name);
-  const [color, setColor] = useState(template.color || "#cccccc");
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#cccccc");
+
+  // -------------------------
+  //   SYNC LOCAL STATE
+  // -------------------------
+  useEffect(() => {
+    if (template) {
+      setName(template.name);
+      setColor(template.color || "#cccccc");
+    }
+  }, [template]);
 
   if (!template) return null;
 
@@ -20,6 +31,7 @@ export default function TemplateProperties({
       color,
     }).then(() => {
       refreshTemplates();
+      if (refreshCategories) refreshCategories();
       onBack();
     });
   }
@@ -30,6 +42,7 @@ export default function TemplateProperties({
   function handleDelete() {
     deleteTemplate(template.id).then(() => {
       refreshTemplates();
+      if (refreshCategories) refreshCategories();
       onBack();
     });
   }

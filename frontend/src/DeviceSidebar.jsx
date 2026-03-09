@@ -12,6 +12,7 @@ export default function DeviceSidebar({
   devices,
   selectedDevice,
   selectedDevicePorts,
+  onSelectDevice,
   onUpdateDevice,
   onDeleteDevice,
   onRefreshPorts,
@@ -39,11 +40,25 @@ export default function DeviceSidebar({
   }
 
   // -------------------------
+  //   RESET TEMPLATE WHEN DEVICE SELECTED
+  // -------------------------
+  useEffect(() => {
+    if (selectedDevice) {
+      setSelectedTemplate(null);
+    }
+  }, [selectedDevice]);
+
+  // -------------------------
   //   INSTANTIATE TEMPLATE → CREATE DEVICE
   // -------------------------
   function handleInstantiate(templateId) {
-    instantiateTemplate(templateId).then(() => {
-      refreshDevices();      // 👈 niente reload, aggiorna solo i device
+    instantiateTemplate(templateId).then((newDevice) => {
+      refreshDevices();
+
+      // seleziona automaticamente il nuovo device
+      if (newDevice) {
+        onSelectDevice(newDevice);
+      }
     });
   }
 
@@ -141,6 +156,7 @@ export default function DeviceSidebar({
         template={selectedTemplate}
         onBack={() => setSelectedTemplate(null)}
         refreshTemplates={refreshTemplates}
+        refreshCategories={refreshCategories}
       />
     );
   }
@@ -152,7 +168,7 @@ export default function DeviceSidebar({
     <div
       style={{
         width: 320,
-        flexShrink: 0,     // 👈 impedisce alla sidebar di espandersi
+        flexShrink: 0,
         background: "#ffffff",
         borderRight: "2px solid #ccc",
         overflowY: "auto",

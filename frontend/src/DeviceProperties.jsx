@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 export default function DeviceProperties({
   device,
   ports,
@@ -6,6 +8,38 @@ export default function DeviceProperties({
   onRefreshPorts,
   onBack,
 }) {
+  const [localName, setLocalName] = useState("");
+  const [localColor, setLocalColor] = useState("#cccccc");
+
+  // -------------------------
+  //   SYNC LOCAL STATE
+  // -------------------------
+  useEffect(() => {
+    if (device) {
+      setLocalName(device.name);
+      setLocalColor(device.color || "#cccccc");
+    }
+  }, [device]);
+
+  // -------------------------
+  //   DEBOUNCED UPDATE
+  // -------------------------
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (device && localName !== device.name) {
+        onUpdateDevice(device.id, { name: localName });
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localName]);
+
+  useEffect(() => {
+    if (device && localColor !== device.color) {
+      onUpdateDevice(device.id, { color: localColor });
+    }
+  }, [localColor]);
+
   if (!device) return null;
 
   return (
@@ -29,10 +63,8 @@ export default function DeviceProperties({
         <label style={{ display: "block", marginBottom: 5 }}>Name</label>
         <input
           type="text"
-          value={device.name}
-          onChange={(e) =>
-            onUpdateDevice(device.id, { name: e.target.value })
-          }
+          value={localName}
+          onChange={(e) => setLocalName(e.target.value)}
           style={{
             width: "100%",
             padding: 6,
@@ -47,10 +79,8 @@ export default function DeviceProperties({
         <label style={{ display: "block", marginBottom: 5 }}>Color</label>
         <input
           type="color"
-          value={device.color || "#cccccc"}
-          onChange={(e) =>
-            onUpdateDevice(device.id, { color: e.target.value })
-          }
+          value={localColor}
+          onChange={(e) => setLocalColor(e.target.value)}
           style={{
             width: "100%",
             height: 40,
@@ -60,6 +90,13 @@ export default function DeviceProperties({
             cursor: "pointer",
           }}
         />
+      </div>
+
+      {/* POSITION */}
+      <div style={{ marginBottom: 20 }}>
+        <h3>Position</h3>
+        <div>X: {device.x}</div>
+        <div>Y: {device.y}</div>
       </div>
 
       {/* PORT LIST */}

@@ -1,92 +1,83 @@
-const API_URL = "http://localhost:8000";   // 👈 modifica se usi un'altra porta
+const API_URL = "http://localhost:8000";
 
 // -------------------------
-//   GENERIC GET
+//   GENERIC REQUEST
 // -------------------------
-async function apiGet(path) {
-  const res = await fetch(`${API_URL}${path}`);
-  return res.json();
+async function apiRequest(path, options = {}) {
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+
+    // Se la risposta non è JSON valido, evita crash
+    const text = await res.text();
+    let data = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok) {
+      console.error("API ERROR:", res.status, data);
+      throw new Error(data?.detail || "API Error");
+    }
+
+    return data;
+  } catch (err) {
+    console.error("NETWORK ERROR:", err);
+    return null;
+  }
 }
 
 // -------------------------
-//   GENERIC POST
+//   WRAPPERS
 // -------------------------
-async function apiPost(path, body) {
-  const res = await fetch(`${API_URL}${path}`, {
+function apiGet(path) {
+  return apiRequest(path, { method: "GET" });
+}
+
+function apiPost(path, body) {
+  return apiRequest(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return res.json();
 }
 
-// -------------------------
-//   GENERIC PUT
-// -------------------------
-async function apiPut(path, body) {
-  const res = await fetch(`${API_URL}${path}`, {
+function apiPut(path, body) {
+  return apiRequest(path, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return res.json();
 }
 
-// -------------------------
-//   GENERIC DELETE
-// -------------------------
-async function apiDelete(path) {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: "DELETE",
-  });
-  return res.json();
+function apiDelete(path) {
+  return apiRequest(path, { method: "DELETE" });
 }
 
 // -------------------------
 //   DEVICES
 // -------------------------
-export function getDevices() {
-  return apiGet("/devices");
-}
-
-export function addDevice(data) {
-  return apiPost("/devices", data);
-}
-
-export function updateDevice(id, data) {
-  return apiPut(`/devices/${id}`, data);
-}
-
-export function deleteDevice(id) {
-  return apiDelete(`/devices/${id}`);
-}
-
-export function getDevicePorts(id) {
-  return apiGet(`/devices/${id}/ports`);
-}
+export const getDevices = () => apiGet("/devices");
+export const addDevice = (data) => apiPost("/devices", data);
+export const updateDevice = (id, data) => apiPut(`/devices/${id}`, data);
+export const deleteDevice = (id) => apiDelete(`/devices/${id}`);
+export const getDevicePorts = (id) => apiGet(`/devices/${id}/ports`);
 
 // -------------------------
 //   CATEGORIES
 // -------------------------
-export function getCategories() {
-  return apiGet("/categories");
-}
+export const getCategories = () => apiGet("/categories");
 
 // -------------------------
 //   TEMPLATES
 // -------------------------
-export function getTemplates() {
-  return apiGet("/templates");
-}
-
-export function updateTemplate(id, data) {
-  return apiPut(`/templates/${id}`, data);
-}
-
-export function deleteTemplate(id) {
-  return apiDelete(`/templates/${id}`);
-}
-
-export function instantiateTemplate(templateId) {
-  return apiPost(`/templates/${templateId}/instantiate`, {});
-}
+export const getTemplates = () => apiGet("/templates");
+export const updateTemplate = (id, data) =>
+  apiPut(`/templates/${id}`, data);
+export const deleteTemplate = (id) =>
+  apiDelete(`/templates/${id}`);
+export const instantiateTemplate = (templateId) =>
+  apiPost(`/templates/${templateId}/instantiate`, {});
