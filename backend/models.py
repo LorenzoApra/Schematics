@@ -4,6 +4,9 @@ from sqlalchemy.orm import relationship
 from .database import Base
 
 
+# -------------------------
+# CATEGORY
+# -------------------------
 class Category(Base):
     __tablename__ = "categories"
 
@@ -11,33 +14,42 @@ class Category(Base):
     name = Column(String, nullable=False)
     color = Column(String, nullable=True)
 
-    templates = relationship("Template", back_populates="category")
+    device_models = relationship("DeviceModel", back_populates="category")
 
 
-class Template(Base):
-    __tablename__ = "templates"
+# -------------------------
+# DEVICE MODEL (ex Template)
+# -------------------------
+class DeviceModel(Base):
+    __tablename__ = "device_models"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     color = Column(String, nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
 
-    category = relationship("Category", back_populates="templates")
-    ports = relationship("TemplatePort", back_populates="template", cascade="all, delete-orphan")
-    devices = relationship("Device", back_populates="template")
+    category = relationship("Category", back_populates="device_models")
+    ports = relationship("ModelPort", back_populates="model", cascade="all, delete-orphan")
+    devices = relationship("Device", back_populates="model")
 
 
-class TemplatePort(Base):
-    __tablename__ = "template_ports"
+# -------------------------
+# MODEL PORT (ex TemplatePort)
+# -------------------------
+class ModelPort(Base):
+    __tablename__ = "model_ports"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)
-    template_id = Column(Integer, ForeignKey("templates.id"), nullable=False)
+    model_id = Column(Integer, ForeignKey("device_models.id"), nullable=False)
 
-    template = relationship("Template", back_populates="ports")
+    model = relationship("DeviceModel", back_populates="ports")
 
 
+# -------------------------
+# DEVICE INSTANCE
+# -------------------------
 class Device(Base):
     __tablename__ = "devices"
 
@@ -46,12 +58,15 @@ class Device(Base):
     color = Column(String, nullable=True)
     x = Column(Integer, nullable=True)
     y = Column(Integer, nullable=True)
-    template_id = Column(Integer, ForeignKey("templates.id"), nullable=True)
+    model_id = Column(Integer, ForeignKey("device_models.id"), nullable=True)
 
-    template = relationship("Template", back_populates="devices")
+    model = relationship("DeviceModel", back_populates="devices")
     ports = relationship("DevicePort", back_populates="device", cascade="all, delete-orphan")
 
 
+# -------------------------
+# DEVICE PORT INSTANCE
+# -------------------------
 class DevicePort(Base):
     __tablename__ = "device_ports"
 

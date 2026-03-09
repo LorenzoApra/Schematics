@@ -1,114 +1,89 @@
-import { useState, useEffect } from "react";
-import Canvas from "./Canvas";
-import DeviceSidebar from "./DeviceSidebar";
-import {
-  getDevices,
-  updateDevice,
-  deleteDevice,
-  getDevicePorts,
-} from "./api";
+import React, { useState } from "react";
+import DeviceSidebar from "./components/DeviceSidebar";
+import Canvas from "./components/Canvas";
+import DeviceModelProperties from "./components/DeviceModelProperties";
+import DeviceProperties from "./components/DeviceProperties";
 
 export default function App() {
-  const [devices, setDevices] = useState([]);
+  const [selectedModel, setSelectedModel] = useState(null);
   const [selectedDevice, setSelectedDevice] = useState(null);
-  const [selectedDevicePorts, setSelectedDevicePorts] = useState([]);
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
-  // -------------------------
-  //   LOAD DEVICES
-  // -------------------------
-  useEffect(() => {
-    refreshDevices();
-  }, []);
-
-  function refreshDevices() {
-    getDevices().then((data) => {
-      const list = data || [];
-      setDevices(list);
-
-      // sincronizza selectedDevice se presente
-      if (selectedDevice) {
-        const updated = list.find((d) => d.id === selectedDevice.id);
-        if (updated) setSelectedDevice(updated);
-        else setSelectedDevice(null);
-      }
-    });
+  // ------------------------------------------------------------
+  // REFRESH CANVAS + SIDEBAR
+  // ------------------------------------------------------------
+  function triggerRefresh() {
+    setRefreshFlag(!refreshFlag);
   }
 
-  // -------------------------
-  //   SELECT DEVICE
-  // -------------------------
+  // ------------------------------------------------------------
+  // WHEN A DEVICE IS ADDED FROM SIDEBAR
+  // ------------------------------------------------------------
+  function handleAddDevice(device) {
+    setSelectedDevice(device);
+    setSelectedModel(null);
+    triggerRefresh();
+  }
+
+  // ------------------------------------------------------------
+  // WHEN A DEVICE IS SELECTED ON CANVAS
+  // ------------------------------------------------------------
   function handleSelectDevice(device) {
     setSelectedDevice(device);
-
-    getDevicePorts(device.id).then((ports) => {
-      setSelectedDevicePorts(ports || []);
-    });
+    setSelectedModel(null);
   }
 
-  // -------------------------
-  //   CLEAR SELECTION
-  // -------------------------
-  function clearSelection() {
+  // ------------------------------------------------------------
+  // WHEN A MODEL IS SELECTED FROM SIDEBAR
+  // ------------------------------------------------------------
+  function handleEditModel(model) {
+    setSelectedModel(model);
     setSelectedDevice(null);
-    setSelectedDevicePorts([]);
   }
 
-  // -------------------------
-  //   UPDATE DEVICE (name/color/pos)
-  // -------------------------
-  function handleUpdateDevice(id, data) {
-    updateDevice(id, data).then((updated) => {
-      if (!updated) return;
-      setDevices((prev) => prev.map((d) => (d.id === id ? updated : d)));
-      if (selectedDevice && selectedDevice.id === id) {
-        setSelectedDevice(updated);
-      }
-    });
+  // ------------------------------------------------------------
+  // CLOSE PROPERTY PANELS
+  // ------------------------------------------------------------
+  function closePanels() {
+    setSelectedModel(null);
+    setSelectedDevice(null);
   }
 
-  // -------------------------
-  //   DELETE DEVICE
-  // -------------------------
-  function handleDeleteDevice(id) {
-    deleteDevice(id).then(() => {
-      setDevices((prev) => prev.filter((d) => d.id !== id));
-      if (selectedDevice && selectedDevice.id === id) {
-        clearSelection();
-      }
-    });
-  }
-
-  // -------------------------
-  //   UPDATE PORT LIST
-  // -------------------------
-  function refreshSelectedDevicePorts() {
-    if (!selectedDevice) return;
-    getDevicePorts(selectedDevice.id).then((ports) =>
-      setSelectedDevicePorts(ports || [])
-    );
-  }
-
+  // ------------------------------------------------------------
+  // RENDER
+  // ------------------------------------------------------------
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      
+      {/* SIDEBAR */}
       <DeviceSidebar
-        devices={devices}
-        selectedDevice={selectedDevice}
-        selectedDevicePorts={selectedDevicePorts}
-        onSelectDevice={handleSelectDevice}
-        onUpdateDevice={handleUpdateDevice}
-        onDeleteDevice={handleDeleteDevice}
-        onRefreshPorts={refreshSelectedDevicePorts}
-        onBack={clearSelection}
-        refreshDevices={refreshDevices}
+        onAddDevice={handleAddDevice}
+        onEditModel={handleEditModel}
       />
 
+      {/* CANVAS */}
       <Canvas
-        devices={devices}
-        selectedDevice={selectedDevice}
+        key={refreshFlag} // reload canvas when refreshFlag toggles
         onSelectDevice={handleSelectDevice}
-        onUpdateDevice={handleUpdateDevice}
-        refreshDevices={refreshDevices}
       />
+
+      {/* RIGHT PANEL: MODEL PROPERTIES */}
+      {selectedModel && (
+        <DeviceModelProperties
+          model={selectedModel}
+          onClose={closePanels}
+          onUpdated={triggerRefresh}
+        />
+      )}
+
+      {/* RIGHT PANEL: DEVICE PROPERTIES */}
+      {selectedDevice && (
+        <DeviceProperties
+          device={selectedDevice}
+          onClose={closePanels}
+          onUpdated={triggerRefresh}
+        />
+      )}
     </div>
   );
 }

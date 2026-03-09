@@ -2,7 +2,10 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 
-# Category
+# ============================================================
+# CATEGORY
+# ============================================================
+
 class CategoryBase(BaseModel):
     name: str
     color: Optional[str] = None
@@ -20,58 +23,64 @@ class CategoryUpdate(BaseModel):
 class Category(CategoryBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
-# TemplatePort
-class TemplatePortBase(BaseModel):
+# ============================================================
+# MODEL PORT (ex TemplatePort)
+# ============================================================
+
+class ModelPortBase(BaseModel):
     name: str
     type: str
 
 
-class TemplatePortCreate(TemplatePortBase):
+class ModelPortCreate(ModelPortBase):
     pass
 
 
-class TemplatePortUpdate(BaseModel):
+class ModelPortUpdate(BaseModel):
     name: Optional[str] = None
     type: Optional[str] = None
 
 
-class TemplatePort(TemplatePortBase):
+class ModelPort(ModelPortBase):
     id: int
-    template_id: int
+    model_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
-# Template
-class TemplateBase(BaseModel):
+# ============================================================
+# DEVICE MODEL (ex Template)
+# ============================================================
+
+class DeviceModelBase(BaseModel):
     name: str
     color: Optional[str] = None
     category_id: Optional[int] = None
 
 
-class TemplateCreate(TemplateBase):
+class DeviceModelCreate(DeviceModelBase):
     pass
 
 
-class TemplateUpdate(BaseModel):
+class DeviceModelUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
     category_id: Optional[int] = None
 
 
-class Template(TemplateBase):
+class DeviceModel(DeviceModelBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
-# DevicePort
+# ============================================================
+# DEVICE PORT INSTANCE
+# ============================================================
+
 class DevicePortBase(BaseModel):
     name: str
     type: str
@@ -90,17 +99,19 @@ class DevicePort(DevicePortBase):
     id: int
     device_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
-# Device
+# ============================================================
+# DEVICE INSTANCE
+# ============================================================
+
 class DeviceBase(BaseModel):
     name: str
     color: Optional[str] = None
     x: Optional[int] = None
     y: Optional[int] = None
-    template_id: Optional[int] = None
+    model_id: Optional[int] = None
 
 
 class DeviceCreate(DeviceBase):
@@ -112,11 +123,10 @@ class DeviceUpdate(BaseModel):
     color: Optional[str] = None
     x: Optional[int] = None
     y: Optional[int] = None
-    template_id: Optional[int] = None
+    model_id: Optional[int] = None
 
 
 class Device(DeviceBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}

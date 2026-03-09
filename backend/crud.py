@@ -4,7 +4,10 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
-# Categories
+# ============================================================
+# CATEGORY CRUD
+# ============================================================
+
 def get_categories(db: Session) -> List[models.Category]:
     return db.query(models.Category).all()
 
@@ -42,25 +45,28 @@ def delete_category(db: Session, category_id: int) -> bool:
     return True
 
 
-# Templates
-def get_templates(db: Session) -> List[models.Template]:
-    return db.query(models.Template).all()
+# ============================================================
+# DEVICE MODEL CRUD (ex Template)
+# ============================================================
+
+def get_device_models(db: Session) -> List[models.DeviceModel]:
+    return db.query(models.DeviceModel).all()
 
 
-def get_template(db: Session, template_id: int) -> Optional[models.Template]:
-    return db.query(models.Template).filter(models.Template.id == template_id).first()
+def get_device_model(db: Session, model_id: int) -> Optional[models.DeviceModel]:
+    return db.query(models.DeviceModel).filter(models.DeviceModel.id == model_id).first()
 
 
-def create_template(db: Session, data: schemas.TemplateCreate) -> models.Template:
-    obj = models.Template(**data.dict())
+def create_device_model(db: Session, data: schemas.DeviceModelCreate) -> models.DeviceModel:
+    obj = models.DeviceModel(**data.dict())
     db.add(obj)
     db.commit()
     db.refresh(obj)
     return obj
 
 
-def update_template(db: Session, template_id: int, data: schemas.TemplateUpdate) -> Optional[models.Template]:
-    obj = get_template(db, template_id)
+def update_device_model(db: Session, model_id: int, data: schemas.DeviceModelUpdate) -> Optional[models.DeviceModel]:
+    obj = get_device_model(db, model_id)
     if not obj:
         return None
     for k, v in data.dict(exclude_unset=True).items():
@@ -71,8 +77,8 @@ def update_template(db: Session, template_id: int, data: schemas.TemplateUpdate)
     return obj
 
 
-def delete_template(db: Session, template_id: int) -> bool:
-    obj = get_template(db, template_id)
+def delete_device_model(db: Session, model_id: int) -> bool:
+    obj = get_device_model(db, model_id)
     if not obj:
         return False
     db.delete(obj)
@@ -80,25 +86,28 @@ def delete_template(db: Session, template_id: int) -> bool:
     return True
 
 
-# Template ports
-def get_template_ports(db: Session, template_id: int) -> List[models.TemplatePort]:
-    return db.query(models.TemplatePort).filter(models.TemplatePort.template_id == template_id).all()
+# ============================================================
+# MODEL PORT CRUD (ex TemplatePort)
+# ============================================================
+
+def get_model_ports(db: Session, model_id: int) -> List[models.ModelPort]:
+    return db.query(models.ModelPort).filter(models.ModelPort.model_id == model_id).all()
 
 
-def get_template_port(db: Session, port_id: int) -> Optional[models.TemplatePort]:
-    return db.query(models.TemplatePort).filter(models.TemplatePort.id == port_id).first()
+def get_model_port(db: Session, port_id: int) -> Optional[models.ModelPort]:
+    return db.query(models.ModelPort).filter(models.ModelPort.id == port_id).first()
 
 
-def create_template_port(db: Session, template_id: int, data: schemas.TemplatePortCreate) -> models.TemplatePort:
-    obj = models.TemplatePort(**data.dict(), template_id=template_id)
+def create_model_port(db: Session, model_id: int, data: schemas.ModelPortCreate) -> models.ModelPort:
+    obj = models.ModelPort(**data.dict(), model_id=model_id)
     db.add(obj)
     db.commit()
     db.refresh(obj)
     return obj
 
 
-def update_template_port(db: Session, port_id: int, data: schemas.TemplatePortUpdate) -> Optional[models.TemplatePort]:
-    obj = get_template_port(db, port_id)
+def update_model_port(db: Session, port_id: int, data: schemas.ModelPortUpdate) -> Optional[models.ModelPort]:
+    obj = get_model_port(db, port_id)
     if not obj:
         return None
     for k, v in data.dict(exclude_unset=True).items():
@@ -109,8 +118,8 @@ def update_template_port(db: Session, port_id: int, data: schemas.TemplatePortUp
     return obj
 
 
-def delete_template_port(db: Session, port_id: int) -> bool:
-    obj = get_template_port(db, port_id)
+def delete_model_port(db: Session, port_id: int) -> bool:
+    obj = get_model_port(db, port_id)
     if not obj:
         return False
     db.delete(obj)
@@ -118,7 +127,10 @@ def delete_template_port(db: Session, port_id: int) -> bool:
     return True
 
 
-# Devices
+# ============================================================
+# DEVICE INSTANCE CRUD
+# ============================================================
+
 def get_devices(db: Session) -> List[models.Device]:
     return db.query(models.Device).all()
 
@@ -156,7 +168,10 @@ def delete_device(db: Session, device_id: int) -> bool:
     return True
 
 
-# Device ports
+# ============================================================
+# DEVICE PORT INSTANCE CRUD
+# ============================================================
+
 def get_device_ports(db: Session, device_id: int) -> List[models.DevicePort]:
     return db.query(models.DevicePort).filter(models.DevicePort.device_id == device_id).all()
 
