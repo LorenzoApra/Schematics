@@ -1,24 +1,52 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_db
-import crud
-import schemas
+from .. import database, models, schemas
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# --------------------------------------------------
-#   GET ALL CATEGORIES
-# --------------------------------------------------
+
 @router.get("/", response_model=list[schemas.Category])
-def get_categories(db: Session = Depends(get_db)):
-    return crud.get_categories(db)
+def list_categories(db: Session = Depends(get_db)):
+    return db.query(models.Category).all()
 
 
-# --------------------------------------------------
-#   CREATE CATEGORY
-# --------------------------------------------------
 @router.post("/", response_model=schemas.Category)
-def create_category(data: schemas.CategoryCreate, db: Session = Depends(get_db)):
-    return crud.create_category(db, data)
+def create_category(cat: schemas.CategoryCreate, db: Session = Depends(get_db)):
+    new_cat = models.Category(name=cat.name, color=cat.color)
+    db.add(new_cat)
+    db.commit()
+    db.refresh(new_cat)
+    return new_cat
+
+
+@router.put("/{category_id}", response_model=schemas.Category)
+def update_category(category_id: int, cat: schemas.CategoryCreate, db: Session = Depends(get_db)):
+    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    category.name = cat.name
+    category.color = cat.color
+
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+@router.delete("/{category_id}")
+def delete_category(category_id: int, db: Session = Depends(get_db)):
+    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    db.delete(category)
+    db.commit()
+    return {"ok": True}

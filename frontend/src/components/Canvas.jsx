@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { getDevices, updateDevice } from "../api";
 
-export default function Canvas({ onSelectDevice }) {
+export default function Canvas({ onSelectDevice, refreshFlag }) {
   const [devices, setDevices] = useState([]);
   const [dragging, setDragging] = useState(null);
 
-  // ------------------------------------------------------------
-  // LOAD DEVICES
-  // ------------------------------------------------------------
   async function loadDevices() {
     const list = await getDevices();
     setDevices(list);
@@ -15,11 +12,8 @@ export default function Canvas({ onSelectDevice }) {
 
   useEffect(() => {
     loadDevices();
-  }, []);
+  }, [refreshFlag]);
 
-  // ------------------------------------------------------------
-  // DRAG START
-  // ------------------------------------------------------------
   function handleMouseDown(e, device) {
     e.stopPropagation();
 
@@ -30,9 +24,6 @@ export default function Canvas({ onSelectDevice }) {
     });
   }
 
-  // ------------------------------------------------------------
-  // DRAG MOVE
-  // ------------------------------------------------------------
   function handleMouseMove(e) {
     if (!dragging) return;
 
@@ -46,31 +37,28 @@ export default function Canvas({ onSelectDevice }) {
     );
   }
 
-  // ------------------------------------------------------------
-  // DRAG END → SAVE POSITION
-  // ------------------------------------------------------------
   async function handleMouseUp() {
     if (!dragging) return;
 
     const dev = devices.find((d) => d.id === dragging.id);
     if (dev) {
-      await updateDevice(dev.id, { x: dev.x, y: dev.y });
+      await updateDevice(dev.id, {
+        name: dev.name,
+        x: dev.x,
+        y: dev.y,
+        color: dev.color,
+        model_id: dev.model_id,
+      });
     }
 
     setDragging(null);
   }
 
-  // ------------------------------------------------------------
-  // SELECT DEVICE
-  // ------------------------------------------------------------
   function handleSelect(device, e) {
     e.stopPropagation();
     onSelectDevice(device);
   }
 
-  // ------------------------------------------------------------
-  // RENDER
-  // ------------------------------------------------------------
   return (
     <div
       style={{

@@ -1,0 +1,45 @@
+export const PORT_TYPES = {
+  Video: [
+    "HDMI",
+    "SDI",
+    "DisplayPort",
+    "NDI",
+    "USB-C Video",
+    "IP2110",
+    "Ottico",
+  ],
+  Audio: [
+    "XLR",
+    "Jack TRS",
+    "Jack TS",
+    "RCA",
+    "Dante",
+    "AES/EBU",
+    "MADI",
+    "AES50",
+  ],
+  Network: [
+    "Ethernet",
+    "Ethernet + PoE",
+    "Fiber"],
+  Lighting: [
+    "DMX 5p",
+    "DMX 3p",
+    "ArtNet",
+    "sACN"
+],
+  Power: [
+    "CEE 16 Mono",
+    "CEE 32 Mono",
+    "CEE 16 Penta",
+    "CEE 32 Penta",
+    "CEE 63 Penta",
+    "CEE 125 Penta",
+    "Powerlock 90mmq",
+     "Powerlock 120mmq",
+    "Socapex",
+    "Civile EU",
+    "Civile Ita",
+  ],
+  Altro: ["Custom"],
+};

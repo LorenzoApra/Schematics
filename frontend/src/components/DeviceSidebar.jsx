@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   getCategories,
+  createCategory,
   getDeviceModels,
   instantiateDeviceModel,
   createDeviceModel,
@@ -13,7 +14,11 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
   const [collapsed, setCollapsed] = useState({});
   const [search, setSearch] = useState("");
 
-  // Create Device Model form
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    color: "#888888",
+  });
+
   const [newModel, setNewModel] = useState({
     name: "",
     category_id: "",
@@ -31,7 +36,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     setCategories(cats);
     setModels(mods);
 
-    // initialize collapsed state
     const col = {};
     cats.forEach((c) => (col[c.id] = false));
     setCollapsed(col);
@@ -62,18 +66,31 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
   }
 
   // ------------------------------------------------------------
+  // CREATE CATEGORY
+  // ------------------------------------------------------------
+  async function handleCreateCategory() {
+    if (!newCategory.name) return;
+
+    await createCategory({
+      name: newCategory.name,
+      color: newCategory.color,
+    });
+
+    setNewCategory({ name: "", color: "#888888" });
+    loadAll();
+  }
+
+  // ------------------------------------------------------------
   // CREATE DEVICE MODEL
   // ------------------------------------------------------------
   async function handleCreateModel() {
     if (!newModel.name || !newModel.category_id) return;
 
-    // 1) Create model
     const created = await createDeviceModel({
       name: newModel.name,
       category_id: Number(newModel.category_id),
     });
 
-    // 2) Create ports
     for (const p of newPorts) {
       if (p.name && p.type) {
         await createModelPort(created.id, {
@@ -83,11 +100,9 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
       }
     }
 
-    // Reset form
     setNewModel({ name: "", category_id: "" });
     setNewPorts([{ name: "", type: "" }]);
 
-    // Reload
     loadAll();
   }
 
@@ -106,16 +121,30 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
   // INSTANTIATE MODEL → ADD DEVICE TO CANVAS
   // ------------------------------------------------------------
   async function handleAddToCanvas(modelId) {
-    const dev = await instantiateDeviceModel(modelId);
-    onAddDevice(dev);
+    try {
+      const device = await instantiateDeviceModel(modelId);
+      onAddDevice(device);
+    } catch (err) {
+      console.error("Error creating device:", err);
+    }
   }
 
   // ------------------------------------------------------------
   // RENDER
   // ------------------------------------------------------------
   return (
-    <div style={{ width: 300, padding: 12, background: "#f5f5f5", height: "100vh", overflowY: "auto" }}>
-      
+    <div
+      style={{
+        width: 300,
+        padding: 12,
+        background: "#f5f5f5",
+        height: "100vh",
+        overflowY: "auto",
+        overflowX: "hidden",
+        boxSizing: "border-box",
+        flexShrink: 0,
+      }}
+    >
       {/* SEARCH */}
       <input
         type="text"
@@ -131,21 +160,67 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
         }}
       />
 
+      {/* CREATE CATEGORY */}
+      <div
+        style={{
+          padding: 10,
+          background: "#fff",
+          borderRadius: 8,
+          marginBottom: 20,
+        }}
+      >
+        <h3 style={{ marginTop: 0 }}>Create Category</h3>
+
+        <input
+          type="text"
+          placeholder="Category name"
+          value={newCategory.name}
+          onChange={(e) =>
+            setNewCategory({ ...newCategory, name: e.target.value })
+          }
+          style={{ width: "100%", padding: 6, marginBottom: 8 }}
+        />
+
+        <input
+          type="color"
+          value={newCategory.color}
+          onChange={(e) =>
+            setNewCategory({ ...newCategory, color: e.target.value })
+          }
+          style={{ width: "100%", padding: 6, marginBottom: 12 }}
+        />
+
+        <button onClick={handleCreateCategory} style={{ width: "100%", padding: 8 }}>
+          Save Category
+        </button>
+      </div>
+
       {/* CREATE DEVICE MODEL */}
-      <div style={{ padding: 10, background: "#fff", borderRadius: 8, marginBottom: 20 }}>
+      <div
+        style={{
+          padding: 10,
+          background: "#fff",
+          borderRadius: 8,
+          marginBottom: 20,
+        }}
+      >
         <h3 style={{ marginTop: 0 }}>Create Device Model</h3>
 
         <input
           type="text"
           placeholder="Model name"
           value={newModel.name}
-          onChange={(e) => setNewModel({ ...newModel, name: e.target.value })}
+          onChange={(e) =>
+            setNewModel({ ...newModel, name: e.target.value })
+          }
           style={{ width: "100%", padding: 6, marginBottom: 8 }}
         />
 
         <select
           value={newModel.category_id}
-          onChange={(e) => setNewModel({ ...newModel, category_id: e.target.value })}
+          onChange={(e) =>
+            setNewModel({ ...newModel, category_id: e.target.value })
+          }
           style={{ width: "100%", padding: 6, marginBottom: 12 }}
         >
           <option value="">Select category</option>

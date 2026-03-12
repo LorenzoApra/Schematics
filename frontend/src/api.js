@@ -38,7 +38,7 @@ export async function deleteCategory(id) {
 
 
 // ============================================================
-// DEVICE MODEL API (ex Template)
+// DEVICE MODEL API
 // ============================================================
 
 export async function getDeviceModels() {
@@ -74,13 +74,8 @@ export async function deleteDeviceModel(id) {
 
 
 // ============================================================
-// MODEL PORT API (porte del modello)
+// MODEL PORT API
 // ============================================================
-
-export async function getModelPorts(modelId) {
-  const res = await fetch(`${API_URL}/device-models/${modelId}/ports`);
-  return res.json();
-}
 
 export async function createModelPort(modelId, data) {
   const res = await fetch(`${API_URL}/device-models/${modelId}/ports`, {
@@ -91,17 +86,8 @@ export async function createModelPort(modelId, data) {
   return res.json();
 }
 
-export async function updateModelPort(modelId, portId, data) {
-  const res = await fetch(`${API_URL}/device-models/${modelId}/ports/${portId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
-
-export async function deleteModelPort(modelId, portId) {
-  const res = await fetch(`${API_URL}/device-models/${modelId}/ports/${portId}`, {
+export async function deleteModelPort(portId) {
+  const res = await fetch(`${API_URL}/device-models/ports/${portId}`, {
     method: "DELETE",
   });
   return res.json();
@@ -131,15 +117,6 @@ export async function getDevices() {
   return res.json();
 }
 
-export async function createDevice(data) {
-  const res = await fetch(`${API_URL}/devices`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
-
 export async function updateDevice(id, data) {
   const res = await fetch(`${API_URL}/devices/${id}`, {
     method: "PUT",
@@ -162,11 +139,6 @@ export async function deleteDevice(id) {
 // DEVICE PORT INSTANCE API
 // ============================================================
 
-export async function getDevicePorts(deviceId) {
-  const res = await fetch(`${API_URL}/devices/${deviceId}/ports`);
-  return res.json();
-}
-
 export async function createDevicePort(deviceId, data) {
   const res = await fetch(`${API_URL}/devices/${deviceId}/ports`, {
     method: "POST",
@@ -176,17 +148,8 @@ export async function createDevicePort(deviceId, data) {
   return res.json();
 }
 
-export async function updateDevicePort(deviceId, portId, data) {
-  const res = await fetch(`${API_URL}/devices/${deviceId}/ports/${portId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
-
-export async function deleteDevicePort(deviceId, portId) {
-  const res = await fetch(`${API_URL}/devices/${deviceId}/ports/${portId}`, {
+export async function deleteDevicePort(portId) {
+  const res = await fetch(`${API_URL}/devices/ports/${portId}`, {
     method: "DELETE",
   });
   return res.json();

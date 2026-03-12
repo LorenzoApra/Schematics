@@ -53,7 +53,15 @@ export default function App() {
   // RENDER
   // ------------------------------------------------------------
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+<div
+  style={{
+    display: "flex",
+    height: "100vh",
+    width: "100vw",
+    overflow: "hidden",
+    position: "relative"
+  }}
+>
       
       {/* SIDEBAR */}
       <DeviceSidebar
@@ -62,10 +70,11 @@ export default function App() {
       />
 
       {/* CANVAS */}
-      <Canvas
-        key={refreshFlag} // reload canvas when refreshFlag toggles
-        onSelectDevice={handleSelectDevice}
-      />
+     <Canvas
+  refreshFlag={refreshFlag}
+  onSelectDevice={handleSelectDevice}
+/>
+
 
       {/* RIGHT PANEL: MODEL PROPERTIES */}
       {selectedModel && (
@@ -78,11 +87,12 @@ export default function App() {
 
       {/* RIGHT PANEL: DEVICE PROPERTIES */}
       {selectedDevice && (
-        <DeviceProperties
-          device={selectedDevice}
-          onClose={closePanels}
-          onUpdated={triggerRefresh}
-        />
+       <DeviceProperties
+  device={selectedDevice}
+  onClose={closePanels}
+  onUpdated={triggerRefresh}
+/>
+
       )}
     </div>
   );
