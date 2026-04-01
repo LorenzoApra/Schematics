@@ -45,6 +45,21 @@ def delete_model_port(port_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+# eliminare device
+@router.delete("/{model_id}")
+def delete_device_model(model_id: int, db: Session = Depends(get_db)):
+    model = db.query(models.DeviceModel).filter(models.DeviceModel.id == model_id).first()
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+
+    # Elimina anche le porte associate
+    for port in model.ports:
+        db.delete(port)
+
+    db.delete(model)
+    db.commit()
+    return {"status": "deleted"}
+
 # INSTANTIATE DEVICE FROM MODEL
 @router.post("/{model_id}/instantiate", response_model=schemas.Device)
 def instantiate_device(model_id: int, db: Session = Depends(get_db)):

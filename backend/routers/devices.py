@@ -1,7 +1,8 @@
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .. import crud, schemas, database
+from .. import crud, schemas, database, models 
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -51,3 +52,15 @@ def delete_device_port(port_id: int, db: Session = Depends(get_db)):
     if not port:
         raise HTTPException(status_code=404, detail="Port not found")
     return {"ok": True}
+
+# ELIMINARE
+@router.delete("/{device_id}")
+def delete_device(device_id: int, db: Session = Depends(get_db)):
+    device = db.query(models.Device).filter(models.Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    db.delete(device)
+    db.commit()
+    return {"status": "deleted"}
+

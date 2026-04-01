@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { updateDevice, createDevicePort } from "../api";
 import { PORT_TYPES } from "../portTypes";
+import { deleteDevice } from "../api";
 
 export default function DeviceProperties({ device, onClose, onUpdated }) {
   const [name, setName] = useState(device.name);
@@ -143,6 +144,26 @@ export default function DeviceProperties({ device, onClose, onUpdated }) {
         <button onClick={handleSave} style={{ flex: 1 }}>
           Save
         </button>
+        <button
+  onClick={async () => {
+    await deleteDevice(device.id);
+    onUpdated();   // aggiorna il canvas
+    onClose();     // chiude il pannello
+  }}
+  style={{
+    backgroundColor: "#d9534f",
+    color: "white",
+    padding: "8px 12px",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    flex: 1
+  }}
+>
+  Delete
+</button>
+
+
         <button onClick={onClose} style={{ flex: 1 }}>
           Close
         </button>

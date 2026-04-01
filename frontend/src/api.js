@@ -64,6 +64,7 @@ export async function updateDeviceModel(id, data) {
   return res.json();
 }
 
+//Eliminare device model
 export async function deleteDeviceModel(id) {
   const res = await fetch(`${API_URL}/device-models/${id}`, {
     method: "DELETE",
@@ -154,3 +155,5 @@ export async function deleteDevicePort(portId) {
   });
   return res.json();
 }
+
+

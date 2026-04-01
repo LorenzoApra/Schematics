@@ -3,6 +3,7 @@ import {
   updateDeviceModel,
   createModelPort,
   deleteModelPort,
+  deleteDeviceModel,
   getCategories,
 } from "../api";
 import { PORT_TYPES } from "../portTypes";
@@ -50,6 +51,14 @@ export default function DeviceModelProperties({ model, onClose, onUpdated }) {
 
     setNewPort({ name: "", type: "", direction: "in" });
     onUpdated();
+  }
+
+  async function handleDeleteModel() {
+    if (!confirm("Delete this model?")) return;
+
+    await deleteDeviceModel(model.id);
+    onUpdated();
+    onClose();
   }
 
   return (
@@ -135,6 +144,22 @@ export default function DeviceModelProperties({ model, onClose, onUpdated }) {
         <button onClick={handleSave} style={{ flex: 1 }}>
           Save
         </button>
+
+        <button
+          onClick={handleDeleteModel}
+          style={{
+            flex: 1,
+            backgroundColor: "#d9534f",
+            color: "white",
+            padding: "8px 12px",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Delete
+        </button>
+
         <button onClick={onClose} style={{ flex: 1 }}>
           Close
         </button>

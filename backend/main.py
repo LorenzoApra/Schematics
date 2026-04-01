@@ -23,3 +23,4 @@ app.include_router(device_models.router)
 app.include_router(devices.router)
 app.include_router(categories.router)
 
+
