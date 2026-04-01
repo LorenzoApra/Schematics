@@ -157,3 +157,11 @@ export async function deleteDevicePort(portId) {
 }
 
 
+export async function updateModelPort(portId, data) {
+  const res = await fetch(`${API_URL}/device-models/ports/${portId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}

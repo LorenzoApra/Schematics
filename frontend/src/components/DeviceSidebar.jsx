@@ -135,7 +135,8 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
   return (
     <div
       style={{
-        width: 300,
+        width: "100%",
+        maxWidth: 320,
         padding: 12,
         background: "#f5f5f5",
         height: "100vh",
@@ -143,6 +144,9 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
         overflowX: "hidden",
         boxSizing: "border-box",
         flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
       }}
     >
       {/* SEARCH */}
@@ -153,23 +157,25 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
         onChange={(e) => setSearch(e.target.value)}
         style={{
           width: "100%",
-          padding: 8,
-          marginBottom: 12,
+          padding: 10,
           borderRadius: 6,
           border: "1px solid #ccc",
+          boxSizing: "border-box",
         }}
       />
 
       {/* CREATE CATEGORY */}
       <div
         style={{
-          padding: 10,
+          padding: 12,
           background: "#fff",
           borderRadius: 8,
-          marginBottom: 20,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
-        <h3 style={{ marginTop: 0 }}>Create Category</h3>
+        <h3 style={{ margin: 0 }}>Create Category</h3>
 
         <input
           type="text"
@@ -178,7 +184,7 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
           onChange={(e) =>
             setNewCategory({ ...newCategory, name: e.target.value })
           }
-          style={{ width: "100%", padding: 6, marginBottom: 8 }}
+          style={{ width: "100%", padding: 6 }}
         />
 
         <input
@@ -187,10 +193,10 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
           onChange={(e) =>
             setNewCategory({ ...newCategory, color: e.target.value })
           }
-          style={{ width: "100%", padding: 6, marginBottom: 12 }}
+          style={{ width: "100%", padding: 6 }}
         />
 
-        <button onClick={handleCreateCategory} style={{ width: "100%", padding: 8 }}>
+        <button onClick={handleCreateCategory} style={{ padding: 8 }}>
           Save Category
         </button>
       </div>
@@ -198,13 +204,15 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
       {/* CREATE DEVICE MODEL */}
       <div
         style={{
-          padding: 10,
+          padding: 12,
           background: "#fff",
           borderRadius: 8,
-          marginBottom: 20,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
-        <h3 style={{ marginTop: 0 }}>Create Device Model</h3>
+        <h3 style={{ margin: 0 }}>Create Device Model</h3>
 
         <input
           type="text"
@@ -213,7 +221,7 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
           onChange={(e) =>
             setNewModel({ ...newModel, name: e.target.value })
           }
-          style={{ width: "100%", padding: 6, marginBottom: 8 }}
+          style={{ width: "100%", padding: 6 }}
         />
 
         <select
@@ -221,7 +229,7 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
           onChange={(e) =>
             setNewModel({ ...newModel, category_id: e.target.value })
           }
-          style={{ width: "100%", padding: 6, marginBottom: 12 }}
+          style={{ width: "100%", padding: 6 }}
         >
           <option value="">Select category</option>
           {categories.map((c) => (
@@ -231,23 +239,31 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
           ))}
         </select>
 
-        <div style={{ marginBottom: 10 }}>
+        <div>
           <strong>Ports</strong>
           {newPorts.map((p, i) => (
-            <div key={i} style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                gap: 6,
+                marginTop: 6,
+                flexWrap: "wrap",
+              }}
+            >
               <input
                 type="text"
                 placeholder="Name"
                 value={p.name}
                 onChange={(e) => updatePortField(i, "name", e.target.value)}
-                style={{ flex: 1, padding: 4 }}
+                style={{ flex: 1, padding: 4, minWidth: 100 }}
               />
               <input
                 type="text"
                 placeholder="Type"
                 value={p.type}
                 onChange={(e) => updatePortField(i, "type", e.target.value)}
-                style={{ flex: 1, padding: 4 }}
+                style={{ flex: 1, padding: 4, minWidth: 100 }}
               />
             </div>
           ))}
@@ -259,75 +275,77 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
           )}
         </div>
 
-        <button onClick={handleCreateModel} style={{ width: "100%", padding: 8 }}>
+        <button onClick={handleCreateModel} style={{ padding: 8 }}>
           Save Model
         </button>
       </div>
 
       {/* CATEGORY LIST */}
-      {categories.map((cat) => {
-        const catModels = filterModelsBySearch(
-          models.filter((m) => m.category_id === cat.id)
-        );
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {categories.map((cat) => {
+          const catModels = filterModelsBySearch(
+            models.filter((m) => m.category_id === cat.id)
+          );
 
-        return (
-          <div key={cat.id} style={{ marginBottom: 12 }}>
-            <div
-              onClick={() => toggleCategory(cat.id)}
-              style={{
-                cursor: "pointer",
-                fontWeight: "bold",
-                padding: "6px 4px",
-                background: "#ddd",
-                borderRadius: 4,
-              }}
-            >
-              {collapsed[cat.id] ? "▶" : "▼"} {cat.name}
-            </div>
-
-            {!collapsed[cat.id] && (
-              <div style={{ marginLeft: 12, marginTop: 6 }}>
-                {catModels.map((m) => (
-                  <div
-                    key={m.id}
-                    style={{
-                      padding: 6,
-                      background: "#fff",
-                      borderRadius: 6,
-                      marginBottom: 6,
-                      borderLeft: `4px solid ${cat.color || "#999"}`,
-                    }}
-                  >
-                    <div style={{ fontWeight: 500 }}>{m.name}</div>
-
-                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                      <button
-                        onClick={() => handleAddToCanvas(m.id)}
-                        style={{ flex: 1 }}
-                      >
-                        ➕ Add
-                      </button>
-
-                      <button
-                        onClick={() => onEditModel(m)}
-                        style={{ flex: 1 }}
-                      >
-                        ✏️ Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {catModels.length === 0 && (
-                  <div style={{ fontStyle: "italic", color: "#666" }}>
-                    No models
-                  </div>
-                )}
+          return (
+            <div key={cat.id}>
+              <div
+                onClick={() => toggleCategory(cat.id)}
+                style={{
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  padding: "6px 4px",
+                  background: "#ddd",
+                  borderRadius: 4,
+                }}
+              >
+                {collapsed[cat.id] ? "▶" : "▼"} {cat.name}
               </div>
-            )}
-          </div>
-        );
-      })}
+
+              {!collapsed[cat.id] && (
+                <div style={{ marginLeft: 12, marginTop: 6 }}>
+                  {catModels.map((m) => (
+                    <div
+                      key={m.id}
+                      style={{
+                        padding: 6,
+                        background: "#fff",
+                        borderRadius: 6,
+                        marginBottom: 6,
+                        borderLeft: `4px solid ${cat.color || "#999"}`,
+                      }}
+                    >
+                      <div style={{ fontWeight: 500 }}>{m.name}</div>
+
+                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                        <button
+                          onClick={() => handleAddToCanvas(m.id)}
+                          style={{ flex: 1 }}
+                        >
+                          ➕ Add
+                        </button>
+
+                        <button
+                          onClick={() => onEditModel(m)}
+                          style={{ flex: 1 }}
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {catModels.length === 0 && (
+                    <div style={{ fontStyle: "italic", color: "#666" }}>
+                      No models
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

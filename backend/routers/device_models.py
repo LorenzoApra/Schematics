@@ -91,3 +91,18 @@ def instantiate_device(model_id: int, db: Session = Depends(get_db)):
     db.refresh(device)
 
     return device
+
+@router.put("/ports/{port_id}", response_model=schemas.ModelPort)
+def update_model_port(port_id: int, data: schemas.ModelPortCreate, db: Session = Depends(get_db)):
+    port = db.query(models.ModelPort).filter(models.ModelPort.id == port_id).first()
+    if not port:
+        raise HTTPException(status_code=404, detail="Port not found")
+
+    port.name = data.name
+    port.type = data.type
+    port.direction = data.direction
+
+    db.commit()
+    db.refresh(port)
+    return port
+
