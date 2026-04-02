@@ -1,167 +1,185 @@
 const API_URL = "http://127.0.0.1:8000";
 
+// ------------------------------------------------------------
+// HELPER: fetch con error handling
+// ------------------------------------------------------------
+async function apiFetch(url, options = {}) {
+  try {
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
 
-// ============================================================
-// CATEGORY API
-// ============================================================
+    // Se la risposta non è OK → errore
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`❌ API ERROR ${res.status} @ ${url}:`, text);
 
+      throw new Error(
+        `API error ${res.status}: ${text || res.statusText}`
+      );
+    }
+
+    // Se c'è JSON → restituiscilo
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await res.json();
+    }
+
+    return null;
+  } catch (err) {
+    console.error(`🔥 FETCH FAILED @ ${url}:`, err);
+    throw err;
+  }
+}
+
+// ------------------------------------------------------------
+// CATEGORIES
+// ------------------------------------------------------------
 export async function getCategories() {
-  const res = await fetch(`${API_URL}/categories`);
-  return res.json();
+  return apiFetch(`${API_URL}/categories`);
 }
 
 export async function createCategory(data) {
-  const res = await fetch(`${API_URL}/categories`, {
+  return apiFetch(`${API_URL}/categories`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
 }
 
-export async function updateCategory(id, data) {
-  const res = await fetch(`${API_URL}/categories/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
-
-export async function deleteCategory(id) {
-  const res = await fetch(`${API_URL}/categories/${id}`, {
-    method: "DELETE",
-  });
-  return res.json();
-}
-
-
-
-// ============================================================
-// DEVICE MODEL API
-// ============================================================
-
+// ------------------------------------------------------------
+// DEVICE MODELS
+// ------------------------------------------------------------
 export async function getDeviceModels() {
-  const res = await fetch(`${API_URL}/device-models`);
-  return res.json();
+  return apiFetch(`${API_URL}/models`);
+}
+
+export async function getDeviceModel(id) {
+  return apiFetch(`${API_URL}/models/${id}`);
 }
 
 export async function createDeviceModel(data) {
-  const res = await fetch(`${API_URL}/device-models`, {
+  return apiFetch(`${API_URL}/models`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
 }
 
 export async function updateDeviceModel(id, data) {
-  const res = await fetch(`${API_URL}/device-models/${id}`, {
+  return apiFetch(`${API_URL}/models/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
 }
 
-//Eliminare device model
 export async function deleteDeviceModel(id) {
-  const res = await fetch(`${API_URL}/device-models/${id}`, {
+  return apiFetch(`${API_URL}/models/${id}`, {
     method: "DELETE",
   });
-  return res.json();
 }
 
-
-
-// ============================================================
-// MODEL PORT API
-// ============================================================
-
+// ------------------------------------------------------------
+// MODEL PORTS
+// ------------------------------------------------------------
 export async function createModelPort(modelId, data) {
-  const res = await fetch(`${API_URL}/device-models/${modelId}/ports`, {
+  return apiFetch(`${API_URL}/models/${modelId}/ports`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
+}
+
+export async function updateModelPort(portId, data) {
+  return apiFetch(`${API_URL}/models/ports/${portId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteModelPort(portId) {
-  const res = await fetch(`${API_URL}/device-models/ports/${portId}`, {
+  return apiFetch(`${API_URL}/models/ports/${portId}`, {
     method: "DELETE",
   });
-  return res.json();
 }
 
-
-
-// ============================================================
-// INSTANTIATE DEVICE MODEL → CREATE DEVICE INSTANCE
-// ============================================================
-
-export async function instantiateDeviceModel(modelId) {
-  const res = await fetch(`${API_URL}/device-models/${modelId}/instantiate`, {
-    method: "POST",
-  });
-  return res.json();
-}
-
-
-
-// ============================================================
-// DEVICE INSTANCE API
-// ============================================================
-
+// ------------------------------------------------------------
+// DEVICES
+// ------------------------------------------------------------
 export async function getDevices() {
-  const res = await fetch(`${API_URL}/devices`);
-  return res.json();
+  return apiFetch(`${API_URL}/devices`);
+}
+
+export async function getDevice(id) {
+  return apiFetch(`${API_URL}/devices/${id}`);
+}
+
+export async function createDevice(data) {
+  return apiFetch(`${API_URL}/devices`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function updateDevice(id, data) {
-  const res = await fetch(`${API_URL}/devices/${id}`, {
+  return apiFetch(`${API_URL}/devices/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
 }
 
 export async function deleteDevice(id) {
-  const res = await fetch(`${API_URL}/devices/${id}`, {
+  return apiFetch(`${API_URL}/devices/${id}`, {
     method: "DELETE",
   });
-  return res.json();
 }
 
-
-
-// ============================================================
-// DEVICE PORT INSTANCE API
-// ============================================================
-
+// ------------------------------------------------------------
+// DEVICE PORTS
+// ------------------------------------------------------------
 export async function createDevicePort(deviceId, data) {
-  const res = await fetch(`${API_URL}/devices/${deviceId}/ports`, {
+  return apiFetch(`${API_URL}/devices/${deviceId}/ports`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
+}
+
+export async function updateDevicePort(portId, data) {
+  return apiFetch(`${API_URL}/devices/ports/${portId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteDevicePort(portId) {
-  const res = await fetch(`${API_URL}/devices/ports/${portId}`, {
+  return apiFetch(`${API_URL}/devices/ports/${portId}`, {
     method: "DELETE",
   });
-  return res.json();
 }
 
+// ------------------------------------------------------------
+// CONNECTIONS
+// ------------------------------------------------------------
+export async function getConnections() {
+  return apiFetch(`${API_URL}/connections`);
+}
 
-export async function updateModelPort(portId, data) {
-  const res = await fetch(`${API_URL}/device-models/ports/${portId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
+export async function createConnection(data) {
+  return apiFetch(`${API_URL}/connections`, {
+    method: "POST",
     body: JSON.stringify(data),
   });
-  return res.json();
+}
+
+export async function deleteConnection(id) {
+  return apiFetch(`${API_URL}/connections/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ------------------------------------------------------------
+// INSTANTIATE DEVICE FROM MODEL
+// ------------------------------------------------------------
+export async function instantiateDeviceModel(modelId) {
+  return apiFetch(`${API_URL}/devices/from-model/${modelId}`, {
+    method: "POST",
+  });
 }

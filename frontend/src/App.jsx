@@ -1,98 +1,105 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DeviceSidebar from "./components/DeviceSidebar";
 import Canvas from "./components/Canvas";
-import DeviceModelProperties from "./components/DeviceModelProperties";
 import DeviceProperties from "./components/DeviceProperties";
+import DeviceModelProperties from "./components/DeviceModelProperties";
+import { getDevices } from "./api";
 
 export default function App() {
-  const [selectedModel, setSelectedModel] = useState(null);
-  const [selectedDevice, setSelectedDevice] = useState(null);
-  const [refreshFlag, setRefreshFlag] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+  const [selectedModelId, setSelectedModelId] = useState(null);
 
   // ------------------------------------------------------------
-  // REFRESH CANVAS + SIDEBAR
+  // LOAD DEVICES FROM BACKEND
   // ------------------------------------------------------------
-  function triggerRefresh() {
-    setRefreshFlag(!refreshFlag);
+  async function loadDevices() {
+    const devs = await getDevices();
+    setDevices(devs);
+  }
+
+  useEffect(() => {
+    loadDevices();
+  }, []);
+
+  // ------------------------------------------------------------
+  // ADD DEVICE TO CANVAS (from sidebar)
+  // ------------------------------------------------------------
+  function handleAddDeviceToCanvas(device) {
+    // Aggiunge il device alla lista
+    setDevices((prev) => [...prev, device]);
+
+    // NON aprire DeviceProperties
+    // (comportamento originale)
   }
 
   // ------------------------------------------------------------
-  // WHEN A DEVICE IS ADDED FROM SIDEBAR
+  // SELECT DEVICE (from canvas)
   // ------------------------------------------------------------
-  function handleAddDevice(device) {
-    setSelectedDevice(device);
-    setSelectedModel(null);
-    triggerRefresh();
+  function handleSelectDevice(deviceId) {
+    setSelectedDeviceId(deviceId);
+    setSelectedModelId(null);
   }
 
   // ------------------------------------------------------------
-  // WHEN A DEVICE IS SELECTED ON CANVAS
+  // SELECT MODEL (from sidebar → Edit)
   // ------------------------------------------------------------
-  function handleSelectDevice(device) {
-    setSelectedDevice(device);
-    setSelectedModel(null);
+  function handleEditModel(modelId) {
+    setSelectedModelId(modelId);
+    setSelectedDeviceId(null);
   }
 
   // ------------------------------------------------------------
-  // WHEN A MODEL IS SELECTED FROM SIDEBAR
+  // UPDATE DEVICE AFTER EDIT
   // ------------------------------------------------------------
-  function handleEditModel(model) {
-    setSelectedModel(model);
-    setSelectedDevice(null);
+  function handleDeviceSaved(updated) {
+    setDevices((prev) =>
+      prev.map((d) => (d.id === updated.id ? updated : d))
+    );
+    setSelectedDeviceId(null);
   }
 
   // ------------------------------------------------------------
-  // CLOSE PROPERTY PANELS
+  // UPDATE MODEL AFTER EDIT
   // ------------------------------------------------------------
-  function closePanels() {
-    setSelectedModel(null);
-    setSelectedDevice(null);
+  function handleModelSaved() {
+    setSelectedModelId(null);
   }
 
-  // ------------------------------------------------------------
-  // RENDER
-  // ------------------------------------------------------------
   return (
-<div
-  style={{
-    display: "flex",
-    height: "100vh",
-    width: "100vw",
-    overflow: "hidden",
-    position: "relative"
-  }}
->
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       
       {/* SIDEBAR */}
       <DeviceSidebar
-        onAddDevice={handleAddDevice}
+        onAddDevice={handleAddDeviceToCanvas}
         onEditModel={handleEditModel}
       />
 
       {/* CANVAS */}
-     <Canvas
-  refreshFlag={refreshFlag}
-  onSelectDevice={handleSelectDevice}
-/>
+      <div style={{ flex: 1, position: "relative" }}>
+        <Canvas
+          devices={devices}
+          onSelectDevice={handleSelectDevice}
+          reloadDevices={loadDevices}
+        />
+      </div>
 
-
-      {/* RIGHT PANEL: MODEL PROPERTIES */}
-      {selectedModel && (
-        <DeviceModelProperties
-          model={selectedModel}
-          onClose={closePanels}
-          onUpdated={triggerRefresh}
+      {/* DEVICE PROPERTIES */}
+      {selectedDeviceId && (
+        <DeviceProperties
+          deviceId={selectedDeviceId}
+          onClose={() => setSelectedDeviceId(null)}
+          onSaved={handleDeviceSaved}
         />
       )}
 
-      {/* RIGHT PANEL: DEVICE PROPERTIES */}
-      {selectedDevice && (
-       <DeviceProperties
-  device={selectedDevice}
-  onClose={closePanels}
-  onUpdated={triggerRefresh}
-/>
-
+      {/* MODEL PROPERTIES */}
+      {selectedModelId && (
+        <DeviceModelProperties
+          modelId={selectedModelId}
+          onClose={() => setSelectedModelId(null)}
+          onSaved={handleModelSaved}
+        />
       )}
     </div>
   );

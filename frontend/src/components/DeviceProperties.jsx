@@ -1,170 +1,303 @@
-import React, { useState, useEffect } from "react";
-import { updateDevice, createDevicePort } from "../api";
-import { PORT_TYPES } from "../portTypes";
-import { deleteDevice } from "../api";
+import React, { useEffect, useState } from "react";
+import {
+  getDevice,
+  updateDevice,
+  createDevicePort,
+  updateDevicePort,
+  deleteDevicePort,
+  deleteDevice,
+} from "../api";
 
-export default function DeviceProperties({ device, onClose, onUpdated }) {
-  const [name, setName] = useState(device.name);
-  const [x, setX] = useState(device.x);
-  const [y, setY] = useState(device.y);
-  const [color, setColor] = useState(device.color);
-  const [ports, setPorts] = useState(device.ports || []);
+function directionColor(direction) {
+  if (direction === "in") return "#cce5ff";
+  if (direction === "out") return "#f8d7da";
+  return "#d4edda";
+}
 
-  const [newPort, setNewPort] = useState({
+export default function DeviceProperties({ deviceId, onClose, onSaved }) {
+  const [device, setDevice] = useState({
+    id: null,
+    name: "",
+    x: 100,
+    y: 100,
+    color: "#000000",
+    model_id: null,
+    ports: [],
+  });
+
+  const [editingPort, setEditingPort] = useState(null);
+  const [portForm, setPortForm] = useState({
     name: "",
     type: "",
-    direction: "in",
+    direction: "inout",
   });
 
   useEffect(() => {
-    setName(device.name);
-    setX(device.x);
-    setY(device.y);
-    setColor(device.color);
-    setPorts(device.ports || []);
-  }, [device]);
+    loadDevice();
+  }, [deviceId]);
 
-  async function handleSave() {
-    await updateDevice(device.id, {
-      name,
-      x: Number(x),
-      y: Number(y),
-      color,
-      model_id: device.model_id,
+  async function loadDevice() {
+    const data = await getDevice(deviceId);
+    setDevice(data);
+  }
+
+  function handleDeviceChange(e) {
+    setDevice({ ...device, [e.target.name]: e.target.value });
+  }
+
+  function handlePortFormChange(e) {
+    setPortForm({ ...portForm, [e.target.name]: e.target.value });
+  }
+
+  function startAddPort() {
+    setEditingPort(null);
+    setPortForm({ name: "", type: "", direction: "inout" });
+  }
+
+  function startEditPort(port) {
+    setEditingPort(port);
+    setPortForm({
+      name: port.name,
+      type: port.type,
+      direction: port.direction || "inout",
+    });
+  }
+
+  async function savePort() {
+    if (!portForm.name || !portForm.type) return;
+
+    if (editingPort) {
+      const updated = await updateDevicePort(editingPort.id, {
+        name: portForm.name,
+        type: portForm.type,
+        direction: portForm.direction || "inout",
+      });
+
+      setDevice((prev) => ({
+        ...prev,
+        ports: prev.ports.map((p) => (p.id === updated.id ? updated : p)),
+      }));
+    } else {
+      const created = await createDevicePort(device.id, {
+        name: portForm.name,
+        type: portForm.type,
+        direction: portForm.direction || "inout",
+      });
+
+      setDevice((prev) => ({
+        ...prev,
+        ports: [...prev.ports, created],
+      }));
+    }
+
+    setEditingPort(null);
+    setPortForm({ name: "", type: "", direction: "inout" });
+  }
+
+  async function removePort(port) {
+    if (!window.confirm("Delete this port?")) return;
+    await deleteDevicePort(port.id);
+    setDevice((prev) => ({
+      ...prev,
+      ports: prev.ports.filter((p) => p.id !== port.id),
+    }));
+  }
+
+  async function saveDevice() {
+    const saved = await updateDevice(device.id, {
+      name: device.name,
+      x: Number(device.x),
+      y: Number(device.y),
+      color: device.color,
+      model_id: device.model_id ? Number(device.model_id) : null,
     });
 
-    onUpdated();
+    onSaved(saved);
+  }
+
+  async function handleDeleteDevice() {
+    if (!window.confirm("Delete this device from canvas?")) return;
+    await deleteDevice(device.id);
+    onSaved(device);
     onClose();
   }
 
-  async function handleAddPort() {
-    if (!newPort.name || !newPort.type) return;
-
-    await createDevicePort(device.id, {
-      name: newPort.name,
-      type: newPort.type,
-      direction: newPort.direction,
-    });
-
-    setNewPort({ name: "", type: "", direction: "in" });
-    onUpdated();
-  }
+  if (!device) return <div>Loading…</div>;
 
   return (
-    <div style={{ padding: 20, background: "#fff", width: 400 }}>
+    <div
+      style={{
+        padding: 20,
+        background: "#fff",
+        borderLeft: "2px solid #ccc",
+        height: "100%",
+        overflowY: "auto",
+      }}
+    >
       <h2>Device Properties</h2>
 
-      <label>Name</label>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ width: "100%", marginBottom: 10 }}
-      />
-
-      <label>Position</label>
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+      <div style={{ marginBottom: 20 }}>
+        <label>Name</label>
         <input
-          type="number"
-          value={x}
-          onChange={(e) => setX(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <input
-          type="number"
-          value={y}
-          onChange={(e) => setY(e.target.value)}
-          style={{ flex: 1 }}
+          name="name"
+          value={device.name}
+          onChange={handleDeviceChange}
+          style={{ width: "100%", padding: 6, marginTop: 4 }}
         />
       </div>
 
-      <label>Color</label>
-      <input
-        type="color"
-        value={color}
-        onChange={(e) => setColor(e.target.value)}
-        style={{ width: "100%", marginBottom: 20 }}
-      />
+      <div style={{ marginBottom: 20 }}>
+        <label>Position X</label>
+        <input
+          name="x"
+          type="number"
+          value={device.x}
+          onChange={handleDeviceChange}
+          style={{ width: "100%", padding: 6, marginTop: 4 }}
+        />
+
+        <label style={{ marginTop: 10 }}>Position Y</label>
+        <input
+          name="y"
+          type="number"
+          value={device.y}
+          onChange={handleDeviceChange}
+          style={{ width: "100%", padding: 6, marginTop: 4 }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label>Color</label>
+        <input
+          name="color"
+          type="color"
+          value={device.color || "#000000"}
+          onChange={handleDeviceChange}
+          style={{ width: "100%", padding: 6, marginTop: 4 }}
+        />
+      </div>
 
       <h3>Ports</h3>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={newPort.name}
-          onChange={(e) => setNewPort({ ...newPort, name: e.target.value })}
-          style={{ flex: 1 }}
-        />
+      <div style={{ marginBottom: 20 }}>
+        {(device?.ports ?? []).map((p) => (
+          <div
+            key={p.id}
+            style={{
+              padding: 8,
+              borderRadius: 6,
+              marginBottom: 6,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: directionColor(p.direction || "inout"),
+            }}
+          >
+            <div>
+              <strong>{p.name}</strong>{" "}
+              <span style={{ fontSize: 12 }}>
+                ({p.direction || "inout"} – {p.type})
+              </span>
+            </div>
 
-        <select
-          value={newPort.direction}
-          onChange={(e) =>
-            setNewPort({ ...newPort, direction: e.target.value })
-          }
-        >
-          <option value="in">In</option>
-          <option value="out">Out</option>
-          <option value="inout">In-Out</option>
-        </select>
-
-        <select
-          value={newPort.type}
-          onChange={(e) => setNewPort({ ...newPort, type: e.target.value })}
-        >
-          <option value="">Type</option>
-          {Object.entries(PORT_TYPES).map(([group, types]) => (
-            <optgroup key={group} label={group}>
-              {types.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-
-        <button onClick={handleAddPort}>+</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => startEditPort(p)}>✏️ Edit</button>
+              <button onClick={() => removePort(p)}>🗑 Delete</button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {ports.map((p) => (
-        <div
-          key={p.id}
+      <div
+        style={{
+          padding: 12,
+          border: "1px solid #aaa",
+          borderRadius: 6,
+          marginBottom: 20,
+        }}
+      >
+        <h4>{editingPort ? "Edit Port" : "Add Port"}</h4>
+
+        <div style={{ marginBottom: 10 }}>
+          <label>Name</label>
+          <input
+            name="name"
+            value={portForm.name}
+            onChange={handlePortFormChange}
+            style={{ width: "100%", padding: 6, marginTop: 4 }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 10 }}>
+          <label>Type</label>
+          <input
+            name="type"
+            value={portForm.type}
+            onChange={handlePortFormChange}
+            style={{ width: "100%", padding: 6, marginTop: 4 }}
+            placeholder="DMX 5p, SDI, Dante..."
+          />
+        </div>
+
+        <div style={{ marginBottom: 10 }}>
+          <label>Direction</label>
+          <select
+            name="direction"
+            value={portForm.direction}
+            onChange={handlePortFormChange}
+            style={{ width: "100%", padding: 6, marginTop: 4 }}
+          >
+            <option value="in">In</option>
+            <option value="out">Out</option>
+            <option value="inout">In-Out</option>
+          </select>
+        </div>
+
+        <button onClick={savePort} style={{ marginTop: 10 }}>
+          {editingPort ? "Save Port" : "Add Port"}
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={saveDevice}
           style={{
-            padding: 6,
-            border: "1px solid #ccc",
+            padding: "10px 20px",
+            background: "#4a90e2",
+            color: "#fff",
+            border: "none",
             borderRadius: 6,
-            marginBottom: 6,
+            cursor: "pointer",
           }}
         >
-          {p.name} — {p.type} — {p.direction}
-        </div>
-      ))}
-
-      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-        <button onClick={handleSave} style={{ flex: 1 }}>
-          Save
+          Save Device
         </button>
+
         <button
-  onClick={async () => {
-    await deleteDevice(device.id);
-    onUpdated();   // aggiorna il canvas
-    onClose();     // chiude il pannello
-  }}
-  style={{
-    backgroundColor: "#d9534f",
-    color: "white",
-    padding: "8px 12px",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    flex: 1
-  }}
->
-  Delete
-</button>
+          onClick={handleDeleteDevice}
+          style={{
+            padding: "10px 20px",
+            background: "#f8d7da",
+            color: "#000",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+          🗑 Delete Device
+        </button>
 
-
-        <button onClick={onClose} style={{ flex: 1 }}>
+        <button
+          onClick={onClose}
+          style={{
+            padding: "10px 20px",
+            background: "#aaa",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
           Close
         </button>
       </div>

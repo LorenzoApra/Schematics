@@ -1,15 +1,12 @@
 from pydantic import BaseModel
-from typing import List
 
+# ---------- CATEGORY ----------
 
 class CategoryBase(BaseModel):
     name: str
-    color: str
-
 
 class CategoryCreate(CategoryBase):
     pass
-
 
 class Category(CategoryBase):
     id: int
@@ -18,69 +15,96 @@ class Category(CategoryBase):
         from_attributes = True
 
 
-class ModelPortCreate(BaseModel):
-    name: str
-    type: str
-    direction: str = "in"
+# ---------- MODEL PORT ----------
 
-
-class ModelPort(BaseModel):
-    id: int
+class ModelPortBase(BaseModel):
     name: str
     type: str
     direction: str
 
-    class Config:
-        from_attributes = True
+class ModelPortCreate(ModelPortBase):
+    pass
 
-
-class DeviceModelCreate(BaseModel):
-    name: str
-    category_id: int
-
-
-class DeviceModel(BaseModel):
+class ModelPort(ModelPortBase):
     id: int
-    name: str
-    category_id: int
-    ports: List[ModelPort] = []
+    model_id: int
 
     class Config:
         from_attributes = True
 
 
-class DevicePortCreate(BaseModel):
+# ---------- DEVICE MODEL ----------
+
+class DeviceModelBase(BaseModel):
     name: str
-    type: str
-    direction: str = "in"
+    category_id: int | None = None
 
+class DeviceModelCreate(DeviceModelBase):
+    pass
 
-class DevicePort(BaseModel):
+class DeviceModelUpdate(DeviceModelBase):
+    pass
+
+class DeviceModel(DeviceModelBase):
     id: int
+    ports: list[ModelPort] = []
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- DEVICE PORT ----------
+
+class DevicePortBase(BaseModel):
     name: str
     type: str
     direction: str
 
+class DevicePortCreate(DevicePortBase):
+    pass
+
+class DevicePort(DevicePortBase):
+    id: int
+    device_id: int
+
     class Config:
         from_attributes = True
 
 
-class DeviceCreate(BaseModel):
+# ---------- DEVICE ----------
+
+class DeviceBase(BaseModel):
     name: str
-    x: float
-    y: float
+    x: int
+    y: int
     color: str
-    model_id: int
+    model_id: int | None = None
 
+class DeviceCreate(DeviceBase):
+    pass
 
-class Device(BaseModel):
+class DeviceUpdate(DeviceBase):
+    pass
+
+class Device(DeviceBase):
     id: int
-    name: str
-    x: float
-    y: float
-    color: str
-    model_id: int
-    ports: List[DevicePort] = []
+    ports: list[DevicePort] = []
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- CONNECTION ----------
+
+class ConnectionBase(BaseModel):
+    from_port_id: int
+    to_port_id: int
+
+class ConnectionCreate(ConnectionBase):
+    pass
+
+class Connection(ConnectionBase):
+    id: int
 
     class Config:
         from_attributes = True

@@ -6,6 +6,7 @@ import {
   instantiateDeviceModel,
   createDeviceModel,
   createModelPort,
+  deleteDeviceModel,
 } from "../api";
 
 export default function DeviceSidebar({ onAddDevice, onEditModel }) {
@@ -24,11 +25,10 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     category_id: "",
   });
 
-  const [newPorts, setNewPorts] = useState([{ name: "", type: "" }]);
+  const [newPorts, setNewPorts] = useState([
+    { name: "", type: "", direction: "inout" },
+  ]);
 
-  // ------------------------------------------------------------
-  // LOAD DATA
-  // ------------------------------------------------------------
   async function loadAll() {
     const cats = await getCategories();
     const mods = await getDeviceModels();
@@ -45,9 +45,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     loadAll();
   }, []);
 
-  // ------------------------------------------------------------
-  // COLLAPSE CATEGORY
-  // ------------------------------------------------------------
   function toggleCategory(catId) {
     setCollapsed((prev) => ({
       ...prev,
@@ -55,9 +52,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     }));
   }
 
-  // ------------------------------------------------------------
-  // SEARCH FILTER
-  // ------------------------------------------------------------
   function filterModelsBySearch(list) {
     if (!search.trim()) return list;
     return list.filter((m) =>
@@ -65,9 +59,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     );
   }
 
-  // ------------------------------------------------------------
-  // CREATE CATEGORY
-  // ------------------------------------------------------------
   async function handleCreateCategory() {
     if (!newCategory.name) return;
 
@@ -80,9 +71,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     loadAll();
   }
 
-  // ------------------------------------------------------------
-  // CREATE DEVICE MODEL
-  // ------------------------------------------------------------
   async function handleCreateModel() {
     if (!newModel.name || !newModel.category_id) return;
 
@@ -96,19 +84,20 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
         await createModelPort(created.id, {
           name: p.name,
           type: p.type,
+          direction: p.direction || "inout",
         });
       }
     }
 
     setNewModel({ name: "", category_id: "" });
-    setNewPorts([{ name: "", type: "" }]);
+    setNewPorts([{ name: "", type: "", direction: "inout" }]);
 
     loadAll();
   }
 
   function addPortField() {
     if (newPorts.length >= 30) return;
-    setNewPorts([...newPorts, { name: "", type: "" }]);
+    setNewPorts([...newPorts, { name: "", type: "", direction: "inout" }]);
   }
 
   function updatePortField(index, field, value) {
@@ -117,9 +106,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     setNewPorts(updated);
   }
 
-  // ------------------------------------------------------------
-  // INSTANTIATE MODEL → ADD DEVICE TO CANVAS
-  // ------------------------------------------------------------
   async function handleAddToCanvas(modelId) {
     try {
       const device = await instantiateDeviceModel(modelId);
@@ -129,9 +115,12 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
     }
   }
 
-  // ------------------------------------------------------------
-  // RENDER
-  // ------------------------------------------------------------
+  async function handleDeleteModel(modelId) {
+    if (!window.confirm("Delete this model?")) return;
+    await deleteDeviceModel(modelId);
+    loadAll();
+  }
+
   return (
     <div
       style={{
@@ -149,7 +138,6 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
         gap: 16,
       }}
     >
-      {/* SEARCH */}
       <input
         type="text"
         placeholder="Search devices..."
@@ -201,7 +189,7 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
         </button>
       </div>
 
-      {/* CREATE DEVICE MODEL */}
+      {/* CREATE MODEL */}
       <div
         style={{
           padding: 12,
@@ -246,9 +234,12 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
               key={i}
               style={{
                 display: "flex",
-                gap: 6,
+                flexDirection: "column",
+                gap: 4,
                 marginTop: 6,
-                flexWrap: "wrap",
+                padding: 6,
+                background: "#f0f0f0",
+                borderRadius: 4,
               }}
             >
               <input
@@ -256,15 +247,26 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
                 placeholder="Name"
                 value={p.name}
                 onChange={(e) => updatePortField(i, "name", e.target.value)}
-                style={{ flex: 1, padding: 4, minWidth: 100 }}
+                style={{ padding: 4 }}
               />
               <input
                 type="text"
-                placeholder="Type"
+                placeholder="Type (DMX 5p, SDI, Dante...)"
                 value={p.type}
                 onChange={(e) => updatePortField(i, "type", e.target.value)}
-                style={{ flex: 1, padding: 4, minWidth: 100 }}
+                style={{ padding: 4 }}
               />
+              <select
+                value={p.direction}
+                onChange={(e) =>
+                  updatePortField(i, "direction", e.target.value)
+                }
+                style={{ padding: 4 }}
+              >
+                <option value="in">In</option>
+                <option value="out">Out</option>
+                <option value="inout">In-Out</option>
+              </select>
             </div>
           ))}
 
@@ -317,7 +319,13 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
                     >
                       <div style={{ fontWeight: 500 }}>{m.name}</div>
 
-                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          marginTop: 6,
+                        }}
+                      >
                         <button
                           onClick={() => handleAddToCanvas(m.id)}
                           style={{ flex: 1 }}
@@ -326,10 +334,17 @@ export default function DeviceSidebar({ onAddDevice, onEditModel }) {
                         </button>
 
                         <button
-                          onClick={() => onEditModel(m)}
+                          onClick={() => onEditModel(m.id)}
                           style={{ flex: 1 }}
                         >
                           ✏️ Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteModel(m.id)}
+                          style={{ flex: 1, background: "#f8d7da" }}
+                        >
+                          🗑 Delete
                         </button>
                       </div>
                     </div>

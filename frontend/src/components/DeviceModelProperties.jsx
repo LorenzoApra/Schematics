@@ -1,356 +1,276 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  getDeviceModel,
   updateDeviceModel,
   createModelPort,
   updateModelPort,
   deleteModelPort,
   deleteDeviceModel,
-  getCategories,
 } from "../api";
-import { PORT_TYPES } from "../portTypes";
 
-export default function DeviceModelProperties({ model, onClose, onUpdated }) {
-  const [name, setName] = useState(model.name);
-  const [categoryId, setCategoryId] = useState(model.category_id);
-  const [categories, setCategories] = useState([]);
-  const [ports, setPorts] = useState(model.ports || []);
+function directionColor(direction) {
+  if (direction === "in") return "#cce5ff"; // blu chiaro
+  if (direction === "out") return "#f8d7da"; // rosso chiaro
+  return "#d4edda"; // verde chiaro
+}
 
-  const [newPort, setNewPort] = useState({
+export default function DeviceModelProperties({ modelId, onClose, onSaved }) {
+  const [model, setModel] = useState({
+    id: null,
     name: "",
-    type: "",
-    direction: "in",
+    category_id: null,
+    ports: [],
   });
 
-  // 🔥 Manteniamo il pannello sincronizzato SOLO quando cambia il modello
+  const [editingPort, setEditingPort] = useState(null);
+  const [portForm, setPortForm] = useState({
+    name: "",
+    type: "",
+    direction: "inout",
+  });
+
   useEffect(() => {
-    loadCategories();
-    setPorts(model.ports || []);
-    setName(model.name);
-    setCategoryId(model.category_id);
-  }, [model]);
+    loadModel();
+  }, [modelId]);
 
-  async function loadCategories() {
-    const data = await getCategories();
-    setCategories(data);
+  async function loadModel() {
+    const data = await getDeviceModel(modelId);
+    setModel(data);
   }
 
-  async function handleSave() {
-    await updateDeviceModel(model.id, {
-      name,
-      category_id: Number(categoryId),
-    });
-
-    onUpdated();
-    onClose();
+  function handleModelChange(e) {
+    setModel({ ...model, [e.target.name]: e.target.value });
   }
 
-  async function handleAddPort() {
-    if (!newPort.name || !newPort.type) return;
+  function handlePortFormChange(e) {
+    setPortForm({ ...portForm, [e.target.name]: e.target.value });
+  }
 
-    const created = await createModelPort(model.id, {
-      name: newPort.name,
-      type: newPort.type,
-      direction: newPort.direction,
+  function startAddPort() {
+    setEditingPort(null);
+    setPortForm({ name: "", type: "", direction: "inout" });
+  }
+
+  function startEditPort(port) {
+    setEditingPort(port);
+    setPortForm({
+      name: port.name,
+      type: port.type,
+      direction: port.direction || "inout",
+    });
+  }
+
+  async function savePort() {
+    if (!portForm.name || !portForm.type) return;
+
+    if (editingPort) {
+      const updated = await updateModelPort(editingPort.id, {
+        name: portForm.name,
+        type: portForm.type,
+        direction: portForm.direction || "inout",
+      });
+
+      setModel((prev) => ({
+        ...prev,
+        ports: prev.ports.map((p) => (p.id === updated.id ? updated : p)),
+      }));
+    } else {
+      const created = await createModelPort(model.id, {
+        name: portForm.name,
+        type: portForm.type,
+        direction: portForm.direction || "inout",
+      });
+
+      setModel((prev) => ({
+        ...prev,
+        ports: [...prev.ports, created],
+      }));
+    }
+
+    setEditingPort(null);
+    setPortForm({ name: "", type: "", direction: "inout" });
+  }
+
+  async function removePort(port) {
+    if (!window.confirm("Delete this port?")) return;
+    await deleteModelPort(port.id);
+    setModel((prev) => ({
+      ...prev,
+      ports: prev.ports.filter((p) => p.id !== port.id),
+    }));
+  }
+
+  async function saveModel() {
+    const saved = await updateDeviceModel(model.id, {
+      name: model.name,
+      category_id: model.category_id ? Number(model.category_id) : null,
     });
 
-    // 🔥 Aggiorna subito la UI
-    setPorts((prev) => [...prev, created]);
-
-    setNewPort({ name: "", type: "", direction: "in" });
-    onUpdated();
+    onSaved(saved);
   }
 
   async function handleDeleteModel() {
-    if (!confirm("Delete this model?")) return;
-
+    if (!window.confirm("Delete this model and all its ports?")) return;
     await deleteDeviceModel(model.id);
-    onUpdated();
+    onSaved(model);
     onClose();
   }
+
+  if (!model) return <div>Loading…</div>;
 
   return (
     <div
       style={{
         padding: 20,
         background: "#fff",
-        width: "100%",
-        maxWidth: 420,
-        height: "100vh",
+        borderLeft: "2px solid #ccc",
+        height: "100%",
         overflowY: "auto",
-        boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
       }}
     >
-      <h2 style={{ margin: 0 }}>Model Properties</h2>
+      <h2>Model Properties</h2>
 
-      {/* NAME */}
-      <label>Name</label>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 8,
-          borderRadius: 6,
-          border: "1px solid #ccc",
-          boxSizing: "border-box",
-        }}
-      />
+      <div style={{ marginBottom: 20 }}>
+        <label>Name</label>
+        <input
+          name="name"
+          value={model.name}
+          onChange={handleModelChange}
+          style={{ width: "100%", padding: 6, marginTop: 4 }}
+        />
+      </div>
 
-      {/* CATEGORY */}
-      <label>Category</label>
-      <select
-        value={categoryId}
-        onChange={(e) => setCategoryId(e.target.value)}
+      <div style={{ marginBottom: 20 }}>
+        <label>Category ID</label>
+        <input
+          name="category_id"
+          value={model.category_id ?? ""}
+          onChange={handleModelChange}
+          style={{ width: "100%", padding: 6, marginTop: 4 }}
+        />
+      </div>
+
+      <h3>Ports</h3>
+
+      <div style={{ marginBottom: 20 }}>
+        {(model?.ports ?? []).map((p) => (
+          <div
+            key={p.id}
+            style={{
+              padding: 8,
+              borderRadius: 6,
+              marginBottom: 6,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: directionColor(p.direction || "inout"),
+            }}
+          >
+            <div>
+              <strong>{p.name}</strong>{" "}
+              <span style={{ fontSize: 12 }}>
+                ({p.direction || "inout"} – {p.type})
+              </span>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => startEditPort(p)}>✏️ Edit</button>
+              <button onClick={() => removePort(p)}>🗑 Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div
         style={{
-          width: "100%",
-          padding: 8,
+          padding: 12,
+          border: "1px solid #aaa",
           borderRadius: 6,
-          border: "1px solid #ccc",
-          marginBottom: 10,
+          marginBottom: 20,
         }}
       >
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
+        <h4>{editingPort ? "Edit Port" : "Add Port"}</h4>
 
-      {/* PORTS */}
-      <h3 style={{ marginTop: 10 }}>Ports</h3>
-
-      {ports.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            padding: 8,
-            border: "1px solid #ccc",
-            borderRadius: 6,
-            marginBottom: 8,
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-            alignItems: "center",
-          }}
-        >
+        <div style={{ marginBottom: 10 }}>
+          <label>Name</label>
           <input
-            type="text"
-            value={p.name}
-            onChange={(e) =>
-              setPorts((prev) =>
-                prev.map((port) =>
-                  port.id === p.id ? { ...port, name: e.target.value } : port
-                )
-              )
-            }
-            style={{
-              flex: "1 1 120px",
-              padding: 6,
-              borderRadius: 4,
-              border: "1px solid #ccc",
-            }}
+            name="name"
+            value={portForm.name}
+            onChange={handlePortFormChange}
+            style={{ width: "100%", padding: 6, marginTop: 4 }}
           />
+        </div>
 
+        <div style={{ marginBottom: 10 }}>
+          <label>Type</label>
+          <input
+            name="type"
+            value={portForm.type}
+            onChange={handlePortFormChange}
+            style={{ width: "100%", padding: 6, marginTop: 4 }}
+            placeholder="DMX 5p, SDI, Dante..."
+          />
+        </div>
+
+        <div style={{ marginBottom: 10 }}>
+          <label>Direction</label>
           <select
-            value={p.direction}
-            onChange={(e) =>
-              setPorts((prev) =>
-                prev.map((port) =>
-                  port.id === p.id
-                    ? { ...port, direction: e.target.value }
-                    : port
-                )
-              )
-            }
-            style={{
-              flex: "1 1 100px",
-              padding: 6,
-              borderRadius: 4,
-              border: "1px solid #ccc",
-            }}
+            name="direction"
+            value={portForm.direction}
+            onChange={handlePortFormChange}
+            style={{ width: "100%", padding: 6, marginTop: 4 }}
           >
             <option value="in">In</option>
             <option value="out">Out</option>
             <option value="inout">In-Out</option>
           </select>
-
-          <select
-            value={p.type}
-            onChange={(e) =>
-              setPorts((prev) =>
-                prev.map((port) =>
-                  port.id === p.id ? { ...port, type: e.target.value } : port
-                )
-              )
-            }
-            style={{
-              flex: "1 1 120px",
-              padding: 6,
-              borderRadius: 4,
-              border: "1px solid #ccc",
-            }}
-          >
-            {Object.entries(PORT_TYPES).map(([group, types]) => (
-              <optgroup key={group} label={group}>
-                {types.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-
-          <button
-            onClick={async () => {
-              const updated = await updateModelPort(p.id, {
-                name: p.name,
-                type: p.type,
-                direction: p.direction,
-              });
-
-              // 🔥 Aggiorna subito la UI
-              setPorts((prev) =>
-                prev.map((port) => (port.id === p.id ? updated : port))
-              );
-
-              // 🔥 Aggiorna anche il modello locale
-              model.ports = model.ports.map((port) =>
-                port.id === p.id ? updated : port
-              );
-
-              onUpdated();
-            }}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
-          >
-            Save
-          </button>
-
-          <button
-            onClick={async () => {
-              await deleteModelPort(p.id);
-
-              // 🔥 Rimuovi subito dalla UI
-              setPorts((prev) => prev.filter((port) => port.id !== p.id));
-
-              onUpdated();
-            }}
-            style={{
-              backgroundColor: "#d9534f",
-              color: "white",
-              border: "none",
-              padding: "6px 10px",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
-          >
-            ✕
-          </button>
         </div>
-      ))}
 
-      {/* ADD NEW PORT */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          marginTop: 12,
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Name"
-          value={newPort.name}
-          onChange={(e) => setNewPort({ ...newPort, name: e.target.value })}
-          style={{
-            flex: "1 1 120px",
-            padding: 6,
-            borderRadius: 4,
-            border: "1px solid #ccc",
-          }}
-        />
-
-        <select
-          value={newPort.direction}
-          onChange={(e) =>
-            setNewPort({ ...newPort, direction: e.target.value })
-          }
-          style={{
-            flex: "1 1 100px",
-            padding: 6,
-            borderRadius: 4,
-            border: "1px solid #ccc",
-          }}
-        >
-          <option value="in">In</option>
-          <option value="out">Out</option>
-          <option value="inout">In-Out</option>
-        </select>
-
-        <select
-          value={newPort.type}
-          onChange={(e) => setNewPort({ ...newPort, type: e.target.value })}
-          style={{
-            flex: "1 1 120px",
-            padding: 6,
-            borderRadius: 4,
-            border: "1px solid #ccc",
-          }}
-        >
-          <option value="">Type</option>
-          {Object.entries(PORT_TYPES).map(([group, types]) => (
-            <optgroup key={group} label={group}>
-              {types.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-
-        <button
-          onClick={handleAddPort}
-          style={{
-            padding: "6px 10px",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          +
+        <button onClick={savePort} style={{ marginTop: 10 }}>
+          {editingPort ? "Save Port" : "Add Port"}
         </button>
       </div>
 
-      {/* FOOTER BUTTONS */}
-      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <button onClick={handleSave} style={{ flex: 1 }}>
-          Save
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={saveModel}
+          style={{
+            padding: "10px 20px",
+            background: "#4a90e2",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+          Save Model
         </button>
 
         <button
           onClick={handleDeleteModel}
           style={{
-            flex: 1,
-            backgroundColor: "#d9534f",
-            color: "white",
-            padding: "8px 12px",
+            padding: "10px 20px",
+            background: "#f8d7da",
+            color: "#000",
             border: "none",
-            borderRadius: "4px",
+            borderRadius: 6,
             cursor: "pointer",
           }}
         >
-          Delete
+          🗑 Delete Model
         </button>
 
-        <button onClick={onClose} style={{ flex: 1 }}>
+        <button
+          onClick={onClose}
+          style={{
+            padding: "10px 20px",
+            background: "#aaa",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
           Close
         </button>
       </div>
